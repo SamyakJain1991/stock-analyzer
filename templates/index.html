@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Stock Analyzer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 30px;
+            background-color: #f9f9f9;
+        }
+        h1 {
+            color: #2c3e50;
+        }
+        form {
+            margin-bottom: 20px;
+        }
+        input[type="text"] {
+            padding: 8px;
+            width: 250px;
+        }
+        button {
+            padding: 8px 15px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .card {
+            background: white;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>📈 Stock Analyzer</h1>
+    <form method="get" action="/analyze">
+        <label>Enter Stock Ticker (e.g. RELIANCE)</label>
+        <input type="text" name="ticker" required>
+        <button type="submit">Analyze</button>
+    </form>
+
+    {% if analysis %}
+        <div class="card">
+            {% if analysis.error %}
+                <p class="error">Error: {{ analysis.error }}</p>
+            {% else %}
+                <h2>{{ analysis.Company }} ({{ analysis.ticker }})</h2>
+                <p><strong>Sector:</strong> {{ analysis.Sector }}</p>
+                <p><strong>Description:</strong> {{ analysis.Description }}</p>
+                <hr>
+                <p><strong>Trend:</strong> {{ analysis.Trend }}</p>
+                <p><strong>Entry Strategy:</strong> {{ analysis.Entry }}</p>
+                <p><strong>Exit Strategy:</strong> {{ analysis.Exit }}</p>
+                <p><strong>Stop-Loss:</strong> {{ analysis.StopLoss }}</p>
+                <p><strong>Verdict:</strong> {{ analysis.Verdict }}</p>
+            {% endif %}
+        </div>
+    {% endif %}
+</body>
+</html>

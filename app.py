@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, render_template
 import yfinance as yf
 import numpy as np
 from finta import TA
@@ -8,7 +8,8 @@ app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return send_from_directory('.', 'index.html')
+    # Initial page load without analysis
+    return render_template('index.html', analysis=None)
 
 @app.route('/analyze')
 def analyze():
@@ -20,7 +21,7 @@ def analyze():
 
     data = yf.download(ticker, period='6mo', interval='1d')
     if data.empty:
-        return jsonify({'error': f'No data found for {ticker}'}), 404
+        return render_template('index.html', analysis={'error': f'No data found for {ticker}'})
 
     data = data.dropna()
 
@@ -76,7 +77,9 @@ def analyze():
     sector = info.get("sector", "N/A")
     description = info.get("longBusinessSummary", "N/A")
 
-    return jsonify({
+    # Analysis dict for template
+    analysis = {
+        "ticker": ticker,
         "Company": company_name,
         "Sector": sector,
         "Description": description,
@@ -85,7 +88,9 @@ def analyze():
         "Exit": exit_msg,
         "StopLoss": stoploss_msg,
         "Verdict": verdict_msg
-    })
+    }
+
+    return render_template('index.html', analysis=analysis)
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
