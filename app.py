@@ -23,11 +23,14 @@ def home():
 @app.route('/analyze')
 def analyze():
     try:
-        # Always force to string
+        # --- Get ticker safely ---
         raw_input = request.args.get('ticker', default='RELIANCE')
+
+        # If tuple/list → take first element
         if isinstance(raw_input, (list, tuple)):
             raw_input = raw_input[0]
 
+        # Force to string always
         raw_input = str(raw_input).strip().upper().replace(" ", "").replace(",", "")
 
         # Apply alias mapping
@@ -37,10 +40,10 @@ def analyze():
         if not ticker.endswith(".NS") and not ticker.endswith(".BO"):
             ticker += ".NS"
 
-        # --- Force string before yfinance ---
+        # Force string before yfinance
         ticker = str(ticker)
 
-        # Download data
+        # --- Download data ---
         data = yf.download(ticker, period='6mo', interval='1d')
         if data.empty:
             return render_template('index.html', analysis={'error': f'No data found for {ticker}'})
@@ -93,6 +96,7 @@ def analyze():
         sector = info.get("sector", "N/A")
         description = info.get("longBusinessSummary", "N/A")
 
+        # --- Analysis dict for template ---
         analysis = {
             "ticker": ticker,
             "Company": company_name,
