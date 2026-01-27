@@ -150,13 +150,4 @@ def analyze():
             verdict_msg = f"Final Verdict: Stock is {verdict_status}. Strong Sell Setup - RSI {rsi_val}, MACD {macd_val}, SMA downtrend confirmed."
         elif rsi_val != "N/A" and 45 <= rsi_val <= 55:
             verdict_status = "Neutral"
-            verdict_msg = f"Final Verdict: Stock is {verdict_status}. Wait for Confirmation - RSI {rsi_val} indicates sideways momentum."
-        else:
-            verdict_status = "Mixed"
-            verdict_msg = f"Final Verdict: Signals are mixed. Trade cautiously - need clearer confirmation."
-
-        try:
-            info = yf.Ticker(str(ticker)).info or {}
-        except Exception:
-            info = {}
-        company_name = info.get
+            verdict_msg = f"Final Verdict: Stock
