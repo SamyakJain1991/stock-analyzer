@@ -16,6 +16,18 @@ ALIASES = {
     "ICICI": "ICICIBANK.NS"
 }
 
+# --- Universal sanitizer for ticker input ---
+def sanitize_ticker(raw_input):
+    if raw_input is None:
+        return "RELIANCE"
+    # Handle nested tuple/list until string
+    while isinstance(raw_input, (list, tuple)):
+        if len(raw_input) == 0:
+            return "RELIANCE"
+        raw_input = raw_input[0]
+    # Force string
+    return str(raw_input).strip().upper().replace(" ", "").replace(",", "")
+
 @app.route('/')
 def home():
     return render_template('index.html', analysis=None)
@@ -25,13 +37,7 @@ def analyze():
     try:
         # --- Get ticker safely ---
         raw_input = request.args.get('ticker', default='RELIANCE')
-
-        # If tuple/list → take first element
-        if isinstance(raw_input, (list, tuple)):
-            raw_input = raw_input[0]
-
-        # Force to string always
-        raw_input = str(raw_input).strip().upper().replace(" ", "").replace(",", "")
+        raw_input = sanitize_ticker(raw_input)
 
         # Apply alias mapping
         ticker = ALIASES.get(raw_input, raw_input)
