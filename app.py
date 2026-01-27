@@ -57,16 +57,17 @@ def analyze():
             except Exception:
                 entry_zone, invalidation, exit_target, stop_loss = "N/A","N/A","N/A","N/A"
 
+            # NSE data me indicators nahi hote, isliye default verdict cautious
             analysis = {
                 "ticker": raw_input,
                 "Company": company_name,
                 "Sector": sector,
                 "Description": f"{company_name} ka sector {sector} hai.",
-                "Trend": "Trend Analysis: Stock abhi NSE data ke hisaab se stable hai.",
+                "Trend": "Trend Analysis: NSE data ke hisaab se stock stable hai.",
                 "Entry": f"Entry Strategy: Current price {last_price}. Zone {entry_zone}. Agar price {invalidation} ke neeche girta hai, to analysis fail ho jaayega.",
                 "Exit": f"Exit Strategy: Target exit around {exit_target}.",
                 "StopLoss": f"Stop-Loss Strategy: Stop-loss {stop_loss} rakho.",
-                "Verdict": "Final Verdict: Trade cautiously — NSE data limited, liquidity check advised."
+                "Verdict": "Final Verdict: Stock view unclear (Bullish/Bearish check ke liye indicators chahiye). Trade cautiously — NSE data limited."
             }
             return render_template('index.html', analysis=analysis)
 
@@ -120,9 +121,10 @@ def analyze():
         stop_loss = f"{entry_price - 25}" if entry_price != "N/A" else "N/A"
         stoploss_msg = f"Stop-Loss Strategy: Stop-loss {stop_loss} rakho."
 
-        # Final Verdict
+        # Final Verdict with Bullish/Bearish
+        verdict_status = "Bullish" if trend == "UP" else "Bearish"
         verdict = "Trade confidently" if trend == "UP" and entry_price != "N/A" and data['Volume'].iloc[-1] > data['Volume'].tail(10).mean() else "Trade cautiously"
-        verdict_msg = f"Final Verdict: {verdict} — liquidity check done."
+        verdict_msg = f"Final Verdict: Stock is {verdict_status}. {verdict} — liquidity check done."
 
         try:
             info = yf.Ticker(str(ticker)).info or {}
