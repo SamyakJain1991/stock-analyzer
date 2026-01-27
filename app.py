@@ -52,7 +52,6 @@ def analyze():
             prev_close = prices.get("previousClose", "N/A")
 
             try:
-                # Percentage based ranges
                 entry_zone = f"{round(last_price * 0.99, 2)} – {last_price}" if last_price != "N/A" else "N/A"
                 invalidation = f"{round(last_price * 0.98, 2)}" if last_price != "N/A" else "N/A"
                 exit_target = f"{round(last_price * 1.03, 2)}" if last_price != "N/A" else "N/A"
@@ -60,7 +59,6 @@ def analyze():
             except Exception:
                 entry_zone, invalidation, exit_target, stop_loss = "N/A","N/A","N/A","N/A"
 
-            # Simple bullish/bearish guess using last vs previous close
             if last_price != "N/A" and prev_close != "N/A":
                 verdict_status = "Bullish" if last_price > prev_close else "Bearish"
             else:
@@ -120,10 +118,7 @@ def analyze():
         entry_price = safe_val(data['Close'])
         entry_range = f"{round(entry_price * 0.99, 2)} – {entry_price}" if entry_price != "N/A" else "N/A"
         invalidation_level = f"{round(entry_price * 0.98, 2)}" if entry_price != "N/A" else "N/A"
-        entry_msg = (
-            f"Entry Strategy: RSI {safe_val(data['RSI'])}, MACD {safe_val(data['MACD'])}. "
-            f"Zone {entry_range}. Agar price {invalidation_level} ke neeche girta hai, to analysis fail ho jaayega."
-        )
+        entry_msg = f"Entry Strategy: RSI {safe_val(data['RSI'])}, MACD {safe_val(data['MACD'])}. Zone {entry_range}. Agar price {invalidation_level} ke neeche girta hai, to analysis fail ho jaayega."
 
         # Suggested Entry Price logic
         rsi_val = safe_val(data['RSI'])
@@ -155,3 +150,13 @@ def analyze():
             verdict_msg = f"Final Verdict: Stock is {verdict_status}. Strong Sell Setup - RSI {rsi_val}, MACD {macd_val}, SMA downtrend confirmed."
         elif rsi_val != "N/A" and 45 <= rsi_val <= 55:
             verdict_status = "Neutral"
+            verdict_msg = f"Final Verdict: Stock is {verdict_status}. Wait for Confirmation - RSI {rsi_val} indicates sideways momentum."
+        else:
+            verdict_status = "Mixed"
+            verdict_msg = f"Final Verdict: Signals are mixed. Trade cautiously - need clearer confirmation."
+
+        try:
+            info = yf.Ticker(str(ticker)).info or {}
+        except Exception:
+            info = {}
+        company_name = info.get
