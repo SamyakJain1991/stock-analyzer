@@ -1,45 +1,48 @@
 from flask import Flask, render_template, request
 import yfinance as yf
-import pandas as pd
+import numpy as np
 from finta import TA
-import os
 
-# Tell Flask to look for templates in current folder
-app = Flask(__name__, template_folder=os.path.dirname(os.path.abspath(__file__)))
+app = Flask(__name__)
 
-@app.route("/", methods=["GET", "POST"])
+@app.route('/', methods=['GET', 'POST'])
 def index():
-    analysis = None
-    if request.method == "POST":
-        ticker = request.form["ticker"].upper()
+    error = None
+    data = None
+    ticker = ""
+
+    if request.method == 'POST':
+        ticker = request.form.get('ticker', '').strip().upper()
+
+        # Auto-append .NS if missing
+        if not ticker.endswith('.NS') and not ticker.endswith('.BO'):
+            ticker += '.NS'
+
         try:
-            # Stock data download
-            df = yf.download(ticker, period="6mo", interval="1d")
+            stock = yf.Ticker(ticker)
+            hist = stock.history(period="6mo")
 
-            if df.empty:
-                analysis = {"error": f"No data found for {ticker}"}
+            if hist.empty:
+                error = f"No data found for {ticker}"
             else:
-                # Technical indicators using finta
-                df["RSI"] = TA.RSI(df)
-                macd = TA.MACD(df)
-                df["MACD"] = macd["MACD"]
-                df["Signal"] = macd["SIGNAL"]
-                df["EMA"] = TA.EMA(df)
+                hist = hist.dropna()
+                hist['SMA_20'] = TA.SMA(hist, 20)
+                hist['SMA_50'] = TA.SMA(hist, 50)
+                hist['RSI'] = TA.RSI(hist)
 
-                # Latest values
-                latest = df.iloc[-1]
-                analysis = {
-                    "ticker": ticker,
-                    "close": round(latest["Close"], 2),
-                    "rsi": round(latest["RSI"], 2),
-                    "macd": round(latest["MACD"], 2),
-                    "signal": round(latest["Signal"], 2),
-                    "ema": round(latest["EMA"], 2),
+                latest = hist.iloc[-1]
+                data = {
+                    'ticker': ticker,
+                    'close': round(latest['Close'], 2),
+                    'sma_20': round(latest['SMA_20'], 2),
+                    'sma_50': round(latest['SMA_50'], 2),
+                    'rsi': round(latest['RSI'], 2)
                 }
+
         except Exception as e:
-            analysis = {"error": str(e)}
+            error = f"Error: {str(e)}"
 
-    return render_template("index.html", analysis=analysis)
+    return render_template('index.html', error=error, data=data)
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+if __name__ == '__main__':
+    app.run(debug=True)
