@@ -6,14 +6,14 @@ import os
 
 app = Flask(__name__)
 
-# --- Alias mapping for common tickers ---
+# --- Alias mapping for common tickers (NSE format) ---
 ALIASES = {
-    "INFOSYS": "INFY.NS",
-    "TCS": "TCS.NS",
-    "RELIANCE": "RELIANCE.NS",
-    "HDFC": "HDFCBANK.NS",
-    "SBIN": "SBIN.NS",
-    "ICICI": "ICICIBANK.NS"
+    "INFOSYS": "INFY.NSE",
+    "TCS": "TCS.NSE",
+    "RELIANCE": "RELIANCE.NSE",
+    "HDFC": "HDFCBANK.NSE",
+    "SBIN": "SBIN.NSE",
+    "ICICI": "ICICIBANK.NSE"
 }
 
 # --- Universal sanitizer for ticker input ---
@@ -43,8 +43,8 @@ def analyze():
         ticker = str(ALIASES.get(raw_input, raw_input))
 
         # Append NSE suffix if missing
-        if not ticker.endswith(".NS") and not ticker.endswith(".BO"):
-            ticker = ticker + ".NS"
+        if not ticker.endswith(".NSE") and not ticker.endswith(".BO"):
+            ticker = ticker + ".NSE"
 
         # Final force cast
         ticker = str(ticker)
