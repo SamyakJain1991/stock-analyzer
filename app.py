@@ -6,6 +6,16 @@ import os
 
 app = Flask(__name__)
 
+# --- Alias mapping for common tickers ---
+ALIASES = {
+    "INFOSYS": "INFY.NS",
+    "TCS": "TCS.NS",
+    "RELIANCE": "RELIANCE.NS",
+    "HDFC": "HDFCBANK.NS",
+    "SBIN": "SBIN.NS",
+    "ICICI": "ICICIBANK.NS"
+}
+
 @app.route('/')
 def home():
     return render_template('index.html', analysis=None)
@@ -14,11 +24,21 @@ def home():
 def analyze():
     try:
         raw_input = request.args.get('ticker', default='RELIANCE', type=str)
-        ticker = raw_input.strip().upper().replace(" ", "").replace(",", "")
 
+        # Handle tuple case safely
+        if isinstance(raw_input, tuple):
+            raw_input = raw_input[0]
+
+        raw_input = str(raw_input).strip().upper().replace(" ", "").replace(",", "")
+
+        # Apply alias mapping
+        ticker = ALIASES.get(raw_input, raw_input)
+
+        # Append NSE suffix if missing
         if not ticker.endswith(".NS") and not ticker.endswith(".BO"):
             ticker += ".NS"
 
+        # Download data
         data = yf.download(ticker, period='6mo', interval='1d')
         if data.empty:
             return render_template('index.html', analysis={'error': f'No data found for {ticker}'})
