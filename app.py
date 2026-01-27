@@ -52,10 +52,11 @@ def analyze():
             prev_close = prices.get("previousClose", "N/A")
 
             try:
-                entry_zone = f"{round(last_price - 2, 2)} – {last_price}" if last_price != "N/A" else "N/A"
-                invalidation = f"{round(last_price - 4, 2)}" if last_price != "N/A" else "N/A"
-                exit_target = f"{round(last_price + 4, 2)}" if last_price != "N/A" else "N/A"
-                stop_loss = f"{round(last_price - 3, 2)}" if last_price != "N/A" else "N/A"
+                # Percentage based ranges
+                entry_zone = f"{round(last_price * 0.99, 2)} – {last_price}" if last_price != "N/A" else "N/A"
+                invalidation = f"{round(last_price * 0.98, 2)}" if last_price != "N/A" else "N/A"
+                exit_target = f"{round(last_price * 1.03, 2)}" if last_price != "N/A" else "N/A"
+                stop_loss = f"{round(last_price * 0.98, 2)}" if last_price != "N/A" else "N/A"
             except Exception:
                 entry_zone, invalidation, exit_target, stop_loss = "N/A","N/A","N/A","N/A"
 
@@ -114,18 +115,18 @@ def analyze():
         data['RSI'] = TA.RSI(data)
         data['MACD'] = TA.MACD(data)['MACD']
         entry_price = safe_val(data['Close'])
-        entry_range = f"{entry_price - 20} – {entry_price}" if entry_price != "N/A" else "N/A"
-        invalidation_level = f"{entry_price - 30}" if entry_price != "N/A" else "N/A"
+        entry_range = f"{round(entry_price * 0.99, 2)} – {entry_price}" if entry_price != "N/A" else "N/A"
+        invalidation_level = f"{round(entry_price * 0.98, 2)}" if entry_price != "N/A" else "N/A"
         entry_msg = (
             f"Entry Strategy: RSI {safe_val(data['RSI'])}, MACD {safe_val(data['MACD'])}. "
             f"Zone {entry_range}. Agar price {invalidation_level} ke neeche girta hai, to analysis fail ho jaayega."
         )
 
         # Exit Strategy
-        exit_msg = f"Exit Strategy: Exit around {entry_price + 50}" if entry_price != "N/A" else "Exit Strategy: N/A"
+        exit_msg = f"Exit Strategy: Exit around {round(entry_price * 1.03, 2)}" if entry_price != "N/A" else "Exit Strategy: N/A"
 
         # Stop-loss Strategy
-        stop_loss = f"{entry_price - 25}" if entry_price != "N/A" else "N/A"
+        stop_loss = f"{round(entry_price * 0.98, 2)}" if entry_price != "N/A" else "N/A"
         stoploss_msg = f"Stop-Loss Strategy: Stop-loss {stop_loss} rakho."
 
         # --- Enhanced Final Verdict ---
