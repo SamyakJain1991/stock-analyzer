@@ -66,6 +66,8 @@ def analyze():
             else:
                 verdict_status = "Unclear"
 
+            suggested_entry = f"Suggested Entry Price: {entry_zone} (basic NSE calculation)"
+
             analysis = {
                 "ticker": raw_input,
                 "Company": company_name,
@@ -73,6 +75,7 @@ def analyze():
                 "Description": f"{company_name} ka sector {sector} hai.",
                 "Trend": f"Trend Analysis: Stock abhi {verdict_status} lag raha hai (NSE data ke hisaab se).",
                 "Entry": f"Entry Strategy: Current price {last_price}. Zone {entry_zone}. Agar price {invalidation} ke neeche girta hai, to analysis fail ho jaayega.",
+                "SuggestedEntry": suggested_entry,
                 "Exit": f"Exit Strategy: Target exit around {exit_target}.",
                 "StopLoss": f"Stop-Loss Strategy: Stop-loss {stop_loss} rakho.",
                 "Verdict": f"Final Verdict: Stock is {verdict_status}. Trade cautiously — NSE data limited."
@@ -122,6 +125,20 @@ def analyze():
             f"Zone {entry_range}. Agar price {invalidation_level} ke neeche girta hai, to analysis fail ho jaayega."
         )
 
+        # Suggested Entry Price logic
+        rsi_val = safe_val(data['RSI'])
+        macd_val = safe_val(data['MACD'])
+        volume_check = data['Volume'].iloc[-1] > data['Volume'].tail(10).mean()
+
+        if trend == "UP" and rsi_val != "N/A" and rsi_val > 55 and macd_val != "N/A" and macd_val > 0 and volume_check:
+            suggested_entry = f"Suggested Entry Price: {round(entry_price * 0.99, 2)} – {entry_price} (near support zone)"
+        elif trend == "DOWN" and rsi_val != "N/A" and rsi_val < 45 and macd_val != "N/A" and macd_val < 0:
+            suggested_entry = f"Suggested Entry Price: {round(entry_price * 1.01, 2)}+ (shorting opportunity)"
+        elif rsi_val != "N/A" and 45 <= rsi_val <= 55:
+            suggested_entry = "Suggested Entry Price: Wait for confirmation, no clear entry."
+        else:
+            suggested_entry = "Suggested Entry Price: Signals mixed, trade cautiously."
+
         # Exit Strategy
         exit_msg = f"Exit Strategy: Exit around {round(entry_price * 1.03, 2)}" if entry_price != "N/A" else "Exit Strategy: N/A"
 
@@ -130,10 +147,6 @@ def analyze():
         stoploss_msg = f"Stop-Loss Strategy: Stop-loss {stop_loss} rakho."
 
         # --- Enhanced Final Verdict ---
-        rsi_val = safe_val(data['RSI'])
-        macd_val = safe_val(data['MACD'])
-        volume_check = data['Volume'].iloc[-1] > data['Volume'].tail(10).mean()
-
         if trend == "UP" and rsi_val != "N/A" and rsi_val > 55 and macd_val != "N/A" and macd_val > 0 and volume_check:
             verdict_status = "Bullish"
             verdict_msg = f"Final Verdict: Stock is {verdict_status}. Strong Buy Setup — RSI {rsi_val}, MACD {macd_val}, SMA crossover confirmed, volume above average."
@@ -145,33 +158,4 @@ def analyze():
             verdict_msg = f"Final Verdict: Stock is {verdict_status}. Wait for Confirmation — RSI {rsi_val} indicates sideways momentum."
         else:
             verdict_status = "Mixed"
-            verdict_msg = f"Final Verdict: Signals are mixed. Trade cautiously — need clearer confirmation."
-
-        try:
-            info = yf.Ticker(str(ticker)).info or {}
-        except Exception:
-            info = {}
-        company_name = info.get("longName", ticker)
-        sector = info.get("sector", "N/A")
-        description = info.get("longBusinessSummary", "N/A")
-
-        analysis = {
-            "ticker": ticker,
-            "Company": company_name,
-            "Sector": sector,
-            "Description": description,
-            "Trend": trend_msg,
-            "Entry": entry_msg,
-            "Exit": exit_msg,
-            "StopLoss": stoploss_msg,
-            "Verdict": verdict_msg
-        }
-
-        return render_template('index.html', analysis=analysis)
-
-    except Exception as e:
-        return render_template('index.html', analysis={'error': f'Unexpected error: {str(e)}'})
-
-if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+            verdict_msg = f"Final Verdict:
