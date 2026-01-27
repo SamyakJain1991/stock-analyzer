@@ -40,13 +40,13 @@ def analyze():
         raw_input = sanitize_ticker(raw_input)
 
         # Apply alias mapping
-        ticker = ALIASES.get(raw_input, raw_input)
+        ticker = str(ALIASES.get(raw_input, raw_input))
 
         # Append NSE suffix if missing
         if not ticker.endswith(".NS") and not ticker.endswith(".BO"):
-            ticker += ".NS"
+            ticker = ticker + ".NS"
 
-        # Force string before yfinance
+        # Final force cast
         ticker = str(ticker)
 
         # --- Download data ---
