@@ -144,15 +144,14 @@ def analyze():
 
         # Stop-loss Strategy
         stop_loss = f"{round(entry_price * 0.98, 2)}" if entry_price != "N/A" else "N/A"
-        stoploss_msg = f"Stop-Loss Strategy: Stop-loss {stop_loss} rakho."
+        stoploss_msg = f"Stop-loss Strategy: Stop-loss {stop_loss} rakho."
 
         # --- Enhanced Final Verdict ---
         if trend == "UP" and rsi_val != "N/A" and rsi_val > 55 and macd_val != "N/A" and macd_val > 0 and volume_check:
             verdict_status = "Bullish"
-            verdict_msg = f"Final Verdict: Stock is {verdict_status}. Strong Buy Setup — RSI {rsi_val}, MACD {macd_val}, SMA crossover confirmed, volume above average."
+            verdict_msg = f"Final Verdict: Stock is {verdict_status}. Strong Buy Setup - RSI {rsi_val}, MACD {macd_val}, SMA crossover confirmed, volume above average."
         elif trend == "DOWN" and rsi_val != "N/A" and rsi_val < 45 and macd_val != "N/A" and macd_val < 0:
             verdict_status = "Bearish"
-            verdict_msg = f"Final Verdict: Stock is {verdict_status}. Strong Sell Setup — RSI {rsi_val}, MACD {macd_val}, SMA downtrend confirmed."
+            verdict_msg = f"Final Verdict: Stock is {verdict_status}. Strong Sell Setup - RSI {rsi_val}, MACD {macd_val}, SMA downtrend confirmed."
         elif rsi_val != "N/A" and 45 <= rsi_val <= 55:
             verdict_status = "Neutral"
-            verdict_msg = f"Final Verdict: Stock is {verdict_status}. Wait for Confirmation — RSI
