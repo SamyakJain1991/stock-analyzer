@@ -1,44 +1,95 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Indian Stock Analyzer</title>
-  <style>
-    body { font-family: Arial; margin: 20px; background: #f9f9f9; }
-    h2 { color: #333; }
-    input { padding: 8px; margin-right: 10px; }
-    button { padding: 8px 12px; cursor: pointer; }
-    .card { 
-      border: 1px solid #ccc; 
-      padding: 15px; 
-      margin: 10px 0; 
-      border-radius: 5px; 
-      background: #fff;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-    .card h3 { margin: 0 0 10px; color: #444; }
-    .card p { margin: 0; color: #555; }
-  </style>
+    <meta charset="UTF-8">
+    <title>Stock Analyzer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f6f9;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        form {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        input[type="text"] {
+            padding: 10px;
+            width: 250px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px 15px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px auto;
+            width: 400px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+        .card h3 {
+            margin-top: 0;
+            color: #007bff;
+        }
+        .explanation {
+            font-size: 14px;
+            color: #555;
+        }
+    </style>
 </head>
 <body>
-  <h2>Indian Stock Analyzer</h2>
-  <input id="ticker" placeholder="Enter NSE stock (e.g. RELIANCE)">
-  <button onclick="analyze()">Analyze</button>
-  <div id="results"></div>
+    <h1>📈 Stock Analyzer</h1>
+    <form method="POST">
+        <input type="text" name="ticker" placeholder="Enter Stock Ticker (e.g. RELIANCE.NS)" required>
+        <button type="submit">Analyze</button>
+    </form>
 
-  <script>
-    async function analyze() {
-      let ticker = document.getElementById("ticker").value;
-      let res = await fetch(`http://127.0.0.1:5000/analyze?ticker=${ticker}`);
-      let data = await res.json();
-      let html = "";
-
-      // Loop through backend response and show cards
-      for (let key in data) {
-        html += `<div class="card"><h3>${key}</h3><p>${data[key]}</p></div>`;
-      }
-
-      document.getElementById("results").innerHTML = html;
-    }
-  </script>
+    {% if analysis %}
+        {% if analysis.error %}
+            <div class="card">
+                <h3>Error</h3>
+                <p>{{ analysis.error }}</p>
+            </div>
+        {% else %}
+            <div class="card">
+                <h3>{{ analysis.ticker }}</h3>
+                <p>Close Price: ₹{{ analysis.close }}</p>
+                <p>RSI: {{ analysis.rsi }}
+                    <span class="explanation">
+                        {% if analysis.rsi > 70 %} (Overbought – may correct down)
+                        {% elif analysis.rsi < 30 %} (Oversold – may bounce up)
+                        {% else %} (Neutral zone)
+                        {% endif %}
+                    </span>
+                </p>
+                <p>MACD: {{ analysis.macd }} vs Signal: {{ analysis.signal }}
+                    <span class="explanation">
+                        {% if analysis.macd > analysis.signal %} (Bullish crossover – upward momentum)
+                        {% elif analysis.macd < analysis.signal %} (Bearish crossover – downward momentum)
+                        {% else %} (Neutral trend)
+                        {% endif %}
+                    </span>
+                </p>
+                <p>EMA: {{ analysis.ema }}
+                    <span class="explanation">
+                        (Tracks short-term trend)
+                    </span>
+                </p>
+            </div>
+        {% endif %}
+    {% endif %}
 </body>
 </html>
