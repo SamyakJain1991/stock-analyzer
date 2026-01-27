@@ -147,6 +147,4 @@ def analyze():
         elif trend == "DOWN" and rsi_val != "N/A" and rsi_val < 45 and macd_val != "N/A" and macd_val < 0:
             verdict_status = "Bearish"
             verdict_msg = f"Final Verdict: Stock is {verdict_status}. Strong Sell Setup - RSI {rsi_val}, MACD {macd_val}, SMA downtrend confirmed."
-        elif rsi_val != "N/A" and 45 <= rsi_val <= 55:
-            verdict_status = "Neutral"
-            verdict_msg = f"Final Verdict: Stock is {verdict_status
+        elif rsi_val
