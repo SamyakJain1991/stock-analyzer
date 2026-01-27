@@ -1,83 +1,99 @@
-from flask import Flask, request
+from flask import Flask, request, jsonify, send_from_directory
 import yfinance as yf
 import numpy as np
-from finta import TA
+import talib
 import os
 
 app = Flask(__name__)
 
-@app.route('/', methods=['GET', 'POST'])
-def index():
-    error = None
-    data = None
-    ticker = ""
+# Serve frontend file directly from Flask
+@app.route('/')
+def home():
+    return send_from_directory('.', 'index.html')
 
-    if request.method == 'POST':
-        ticker = request.form.get('ticker', '').strip().upper()
+@app.route('/analyze')
+def analyze():
+    # Get ticker from user
+    raw_input = request.args.get('ticker', default='RELIANCE', type=str)
+    ticker = raw_input.strip().upper().replace(" ", "").replace(",", "")
 
-        # Auto-append .NS if missing
-        if not ticker.endswith('.NS') and not ticker.endswith('.BO'):
-            ticker += '.NS'
+    # Always append .NS for Indian NSE stocks
+    if not ticker.endswith(".NS") and not ticker.endswith(".BO"):
+        ticker += ".NS"
 
-        try:
-            stock = yf.Ticker(ticker)
-            hist = stock.history(period="6mo")
+    # Fetch last 6 months daily data
+    data = yf.download(ticker, period='6mo', interval='1d')
+    if data.empty:
+        return jsonify({'error': f'No data found for {ticker}'}), 404
 
-            if hist.empty:
-                error = f"No data found for {ticker}"
-            else:
-                hist = hist.dropna()
-                hist['SMA_20'] = TA.SMA(hist, 20)
-                hist['SMA_50'] = TA.SMA(hist, 50)
-                hist['RSI'] = TA.RSI(hist)
+    # Convert to 1D numpy arrays
+    close = data['Close'].to_numpy().astype(float).flatten()
+    high = data['High'].to_numpy().astype(float).flatten()
+    low = data['Low'].to_numpy().astype(float).flatten()
+    volume = data['Volume'].to_numpy().astype(float).flatten()
 
-                latest = hist.iloc[-1]
-                data = {
-                    'ticker': ticker,
-                    'close': round(latest['Close'], 2),
-                    'sma_20': round(latest['SMA_20'], 2),
-                    'sma_50': round(latest['SMA_50'], 2),
-                    'rsi': round(latest['RSI'], 2)
-                }
+    # --- Trend Analysis ---
+    sma_short = talib.SMA(close, timeperiod=10)
+    sma_long = talib.SMA(close, timeperiod=30)
+    trend = "UP" if sma_short[-1] > sma_long[-1] else "DOWN"
+    trend_msg = (
+        "Stock abhi uptrend me hai (short-term average upar hai)."
+        if trend == "UP"
+        else "Stock abhi downtrend me hai (short-term average neeche hai)."
+    )
 
-        except Exception as e:
-            if "Rate limited" in str(e):
-                error = "Yahoo Finance rate limit reached. Please try again after a few minutes."
-            else:
-                error = f"Error: {str(e)}"
+    # --- Entry Strategy ---
+    rsi = talib.RSI(close, timeperiod=14)
+    macd, macdsignal, macdhist = talib.MACD(close, fastperiod=12, slowperiod=26, signalperiod=9)
+    entry_price = round(close[-1], 2)
+    entry_range = f"{entry_price - 20:.2f} – {entry_price:.2f}"
+    invalidation = f"{entry_price - 30:.2f}"
+    entry_msg = (
+        f"RSI {rsi[-1]:.2f} (30 se neeche matlab oversold), MACD {macd[-1]:.2f}. "
+        f"Kharidne ka zone {entry_range}. Agar {invalidation} se neeche gaya to trade avoid karo."
+    )
 
-    # Direct HTML response (no templates folder needed)
-    html = """
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Stock Analyzer</title>
-    </head>
-    <body>
-        <h1>Stock Analyzer</h1>
-        <form method="POST">
-            <label>Enter Stock Ticker (e.g. RELIANCE.NS)</label>
-            <input type="text" name="ticker" required>
-            <button type="submit">Analyze</button>
-        </form>
-    """
+    # --- Exit Strategy ---
+    exit_msg = (
+        f"Profit jaldi lena ho to {entry_price + 50:.2f} ke aas-paas exit karo. "
+        f"Safe exit {entry_price + 25:.2f} ke aas-paas hai."
+    )
 
-    if error:
-        html += f"<p style='color:red;'>Error: {error}</p>"
+    # --- Stop-loss Strategy ---
+    stop_loss = f"{entry_price - 25:.2f}"
+    stoploss_msg = (
+        f"Stop-loss {stop_loss} rakho. Agar stock us level se neeche gaya to turant exit karo. "
+        "Ek trade me apne capital ka sirf 1–2% risk lo."
+    )
 
-    if data:
-        html += f"""
-        <h2>Results for {data['ticker']}</h2>
-        <p>Close Price: {data['close']}</p>
-        <p>SMA 20: {data['sma_20']}</p>
-        <p>SMA 50: {data['sma_50']}</p>
-        <p>RSI: {data['rsi']}</p>
-        """
+    # --- Final Verdict ---
+    verdict = "Trade confidently" if trend == "UP" and volume[-1] > np.mean(volume[-10:]) else "Trade cautiously"
+    verdict_msg = (
+        f"{verdict} — "
+        + (
+            "trend strong hai aur liquidity healthy hai."
+            if verdict == "Trade confidently"
+            else "stock weak hai, isliye carefully trade karo. Volume theek hai."
+        )
+    )
 
-    html += "</body></html>"
-    return html
+    # --- Company Info ---
+    info = yf.Ticker(ticker).info
+    company_name = info.get("longName", "N/A")
+    sector = info.get("sector", "N/A")
+    description = info.get("longBusinessSummary", "N/A")
+
+    return jsonify({
+        "Company": company_name,
+        "Sector": sector,
+        "Description": description,
+        "Trend": trend_msg,
+        "Entry": entry_msg,
+        "Exit": exit_msg,
+        "StopLoss": stoploss_msg,
+        "Verdict": verdict_msg
+    })
 
 if __name__ == '__main__':
-    # Render requires binding to 0.0.0.0 and PORT env variable
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
