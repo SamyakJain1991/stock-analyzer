@@ -47,7 +47,9 @@ def analyze():
             info = nse_data.get("info", {})
             company_name = info.get("companyName", raw_input)
             sector = info.get("industry", "N/A")
-            last_price = nse_data.get("priceInfo", {}).get("lastPrice", "N/A")
+            prices = nse_data.get("priceInfo", {})
+            last_price = prices.get("lastPrice", "N/A")
+            prev_close = prices.get("previousClose", "N/A")
 
             try:
                 entry_zone = f"{round(last_price - 2, 2)} – {last_price}" if last_price != "N/A" else "N/A"
@@ -57,17 +59,22 @@ def analyze():
             except Exception:
                 entry_zone, invalidation, exit_target, stop_loss = "N/A","N/A","N/A","N/A"
 
-            # NSE data me indicators nahi hote, isliye default verdict cautious
+            # Simple bullish/bearish guess using last vs previous close
+            if last_price != "N/A" and prev_close != "N/A":
+                verdict_status = "Bullish" if last_price > prev_close else "Bearish"
+            else:
+                verdict_status = "Unclear"
+
             analysis = {
                 "ticker": raw_input,
                 "Company": company_name,
                 "Sector": sector,
                 "Description": f"{company_name} ka sector {sector} hai.",
-                "Trend": "Trend Analysis: NSE data ke hisaab se stock stable hai.",
+                "Trend": f"Trend Analysis: Stock abhi {verdict_status} lag raha hai (NSE data ke hisaab se).",
                 "Entry": f"Entry Strategy: Current price {last_price}. Zone {entry_zone}. Agar price {invalidation} ke neeche girta hai, to analysis fail ho jaayega.",
                 "Exit": f"Exit Strategy: Target exit around {exit_target}.",
                 "StopLoss": f"Stop-Loss Strategy: Stop-loss {stop_loss} rakho.",
-                "Verdict": "Final Verdict: Stock view unclear (Bullish/Bearish check ke liye indicators chahiye). Trade cautiously — NSE data limited."
+                "Verdict": f"Final Verdict: Stock is {verdict_status}. Trade cautiously — NSE data limited."
             }
             return render_template('index.html', analysis=analysis)
 
