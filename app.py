@@ -6,7 +6,6 @@ from finta import TA
 
 app = Flask(__name__)
 
-# --- Universal sanitizer for ticker input ---
 def sanitize_ticker(raw_input):
     if raw_input is None:
         return "RELIANCE"
@@ -16,7 +15,6 @@ def sanitize_ticker(raw_input):
         raw_input = raw_input[0]
     return str(raw_input).strip().upper().replace(" ", "").replace(",", "")
 
-# --- NSE India API fetch ---
 def fetch_nse_data(symbol):
     url = f"https://www.nseindia.com/api/quote-equity?symbol={symbol}"
     headers = {"User-Agent": "Mozilla/5.0", "Accept": "application/json"}
@@ -40,7 +38,7 @@ def analyze():
         raw_input = request.args.get('ticker', default='RELIANCE')
         raw_input = sanitize_ticker(raw_input)
 
-        # --- Try NSE API first ---
+        # --- NSE API ---
         nse_data = fetch_nse_data(raw_input)
         if nse_data:
             info = nse_data.get("info", {})
@@ -58,11 +56,7 @@ def analyze():
             except Exception:
                 entry_zone, invalidation, exit_target, stop_loss = "N/A","N/A","N/A","N/A"
 
-            if last_price != "N/A" and prev_close != "N/A":
-                verdict_status = "Bullish" if last_price > prev_close else "Bearish"
-            else:
-                verdict_status = "Unclear"
-
+            verdict_status = "Bullish" if last_price != "N/A" and prev_close != "N/A" and last_price > prev_close else "Bearish"
             suggested_entry = f"Suggested Entry Price: {entry_zone} (basic NSE calculation)"
 
             analysis = {
@@ -79,11 +73,10 @@ def analyze():
             }
             return render_template('index.html', analysis=analysis)
 
-        # --- Fallback to Yahoo Finance ---
+        # --- Yahoo Finance fallback ---
         ticker = raw_input
         if not ticker.endswith(".NSE") and not ticker.endswith(".NS") and not ticker.endswith(".BO"):
             ticker = ticker + ".NS"
-        ticker = str(ticker)
 
         try:
             data = yf.download(ticker, period='6mo', interval='1d')
@@ -103,7 +96,7 @@ def analyze():
             except Exception:
                 return default
 
-        # Trend Analysis
+        # Trend
         data['SMA_10'] = TA.SMA(data, 10)
         data['SMA_30'] = TA.SMA(data, 30)
         sma10 = safe_val(data['SMA_10'])
@@ -111,7 +104,7 @@ def analyze():
         trend = "UP" if sma10 != "N/A" and sma30 != "N/A" and sma10 > sma30 else "DOWN"
         trend_msg = f"Trend Analysis: Stock abhi {'uptrend' if trend=='UP' else 'downtrend'} me hai."
 
-        # Entry Strategy
+        # Entry
         data['RSI'] = TA.RSI(data)
         data['MACD'] = TA.MACD(data)['MACD']
         entry_price = safe_val(data['Close'])
@@ -119,7 +112,7 @@ def analyze():
         invalidation_level = f"{round(entry_price * 0.98, 2)}" if entry_price != "N/A" else "N/A"
         entry_msg = f"Entry Strategy: RSI {safe_val(data['RSI'])}, MACD {safe_val(data['MACD'])}. Zone {entry_range}. Agar price {invalidation_level} ke neeche girta hai, to analysis fail ho jaayega."
 
-        # Suggested Entry Price logic
+        # Suggested Entry
         rsi_val = safe_val(data['RSI'])
         macd_val = safe_val(data['MACD'])
         volume_check = data['Volume'].iloc[-1] > data['Volume'].tail(10).mean()
@@ -133,18 +126,21 @@ def analyze():
         else:
             suggested_entry = "Suggested Entry Price: Signals mixed, trade cautiously."
 
-        # Exit Strategy
+        # Exit & Stoploss
         exit_msg = f"Exit Strategy: Exit around {round(entry_price * 1.03, 2)}" if entry_price != "N/A" else "Exit Strategy: N/A"
-
-        # Stop-loss Strategy
         stop_loss = f"{round(entry_price * 0.98, 2)}" if entry_price != "N/A" else "N/A"
         stoploss_msg = f"Stop-loss Strategy: Stop-loss {stop_loss} rakho."
 
-        # --- Enhanced Final Verdict ---
+        # Verdict
         if trend == "UP" and rsi_val != "N/A" and rsi_val > 55 and macd_val != "N/A" and macd_val > 0 and volume_check:
             verdict_status = "Bullish"
             verdict_msg = f"Final Verdict: Stock is {verdict_status}. Strong Buy Setup - RSI {rsi_val}, MACD {macd_val}, SMA crossover confirmed, volume above average."
         elif trend == "DOWN" and rsi_val != "N/A" and rsi_val < 45 and macd_val != "N/A" and macd_val < 0:
             verdict_status = "Bearish"
             verdict_msg = f"Final Verdict: Stock is {verdict_status}. Strong Sell Setup - RSI {rsi_val}, MACD {macd_val}, SMA downtrend confirmed."
-        elif rsi_val != "N/A" and 45 <= rsi_val <=
+        elif rsi_val != "N/A" and 45 <= rsi_val <= 55:
+            verdict_status = "Neutral"
+            verdict_msg = f"Final Verdict: Stock is {verdict_status}. Wait for Confirmation - RSI {rsi_val} indicates sideways momentum."
+        else:
+            verdict_status = "Mixed"
+            verdict_msg = f"Final Verdict
