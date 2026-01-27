@@ -13,19 +13,19 @@ ALIASES = {
     "RELIANCE": "RELIANCE.NSE",
     "HDFC": "HDFCBANK.NSE",
     "SBIN": "SBIN.NSE",
-    "ICICI": "ICICIBANK.NSE"
+    "ICICI": "ICICIBANK.NSE",
+    "SUZLON": "SUZLON.NSE"
 }
 
 # --- Universal sanitizer for ticker input ---
 def sanitize_ticker(raw_input):
     if raw_input is None:
         return "RELIANCE"
-    # Handle nested tuple/list until string
+    # Keep unwrapping until not tuple/list
     while isinstance(raw_input, (list, tuple)):
         if len(raw_input) == 0:
             return "RELIANCE"
         raw_input = raw_input[0]
-    # Force string
     return str(raw_input).strip().upper().replace(" ", "").replace(",", "")
 
 @app.route('/')
@@ -46,11 +46,14 @@ def analyze():
         if not ticker.endswith(".NSE") and not ticker.endswith(".BO"):
             ticker = ticker + ".NSE"
 
-        # Final force cast
         ticker = str(ticker)
 
         # --- Download data ---
-        data = yf.download(ticker, period='6mo', interval='1d')
+        try:
+            data = yf.download(ticker, period='6mo', interval='1d')
+        except Exception as e:
+            return render_template('index.html', analysis={'error': f'Yahoo Finance error: {str(e)}'})
+
         if data.empty:
             return render_template('index.html', analysis={'error': f'No data found for {ticker}'})
 
@@ -95,7 +98,7 @@ def analyze():
 
         # --- Company Info ---
         try:
-            info = yf.Ticker(ticker).info or {}
+            info = yf.Ticker(str(ticker)).info or {}
         except Exception:
             info = {}
         company_name = info.get("longName", ticker)
