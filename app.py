@@ -23,23 +23,22 @@ def home():
 @app.route('/analyze')
 def analyze():
     try:
-        raw_input = request.args.get('ticker', default='RELIANCE', type=str)
-
-        # --- Safe cast if tuple ---
-        if isinstance(raw_input, tuple):
+        # Always force to string
+        raw_input = request.args.get('ticker', default='RELIANCE')
+        if isinstance(raw_input, (list, tuple)):
             raw_input = raw_input[0]
 
         raw_input = str(raw_input).strip().upper().replace(" ", "").replace(",", "")
 
-        # --- Apply alias mapping ---
+        # Apply alias mapping
         ticker = ALIASES.get(raw_input, raw_input)
 
-        # --- Append NSE suffix if missing ---
+        # Append NSE suffix if missing
         if not ticker.endswith(".NS") and not ticker.endswith(".BO"):
             ticker += ".NS"
 
-        # --- Download data ---
-        data = yf.download(ticker, period='6mo', interval='1d')
+        # Download data
+        data = yf.download(str(ticker), period='6mo', interval='1d')
         if data.empty:
             return render_template('index.html', analysis={'error': f'No data found for {ticker}'})
 
@@ -84,14 +83,13 @@ def analyze():
 
         # --- Company Info ---
         try:
-            info = yf.Ticker(ticker).info or {}
+            info = yf.Ticker(str(ticker)).info or {}
         except Exception:
             info = {}
         company_name = info.get("longName", ticker)
         sector = info.get("sector", "N/A")
         description = info.get("longBusinessSummary", "N/A")
 
-        # --- Analysis dict for template ---
         analysis = {
             "ticker": ticker,
             "Company": company_name,
@@ -107,7 +105,6 @@ def analyze():
         return render_template('index.html', analysis=analysis)
 
     except Exception as e:
-        # Catch-all error handler
         return render_template('index.html', analysis={'error': f'Unexpected error: {str(e)}'})
 
 if __name__ == '__main__':
