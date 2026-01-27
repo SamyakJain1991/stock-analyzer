@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Indian Stock Analyzer</title>
+  <style>
+    body { font-family: Arial; margin: 20px; background: #f9f9f9; }
+    h2 { color: #333; }
+    input { padding: 8px; margin-right: 10px; }
+    button { padding: 8px 12px; cursor: pointer; }
+    .card { 
+      border: 1px solid #ccc; 
+      padding: 15px; 
+      margin: 10px 0; 
+      border-radius: 5px; 
+      background: #fff;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .card h3 { margin: 0 0 10px; color: #444; }
+    .card p { margin: 0; color: #555; }
+  </style>
+</head>
+<body>
+  <h2>Indian Stock Analyzer</h2>
+  <input id="ticker" placeholder="Enter NSE stock (e.g. RELIANCE)">
+  <button onclick="analyze()">Analyze</button>
+  <div id="results"></div>
+
+  <script>
+    async function analyze() {
+      let ticker = document.getElementById("ticker").value;
+      let res = await fetch(`http://127.0.0.1:5000/analyze?ticker=${ticker}`);
+      let data = await res.json();
+      let html = "";
+
+      // Loop through backend response and show cards
+      for (let key in data) {
+        html += `<div class="card"><h3>${key}</h3><p>${data[key]}</p></div>`;
+      }
+
+      document.getElementById("results").innerHTML = html;
+    }
+  </script>
+</body>
+</html>
