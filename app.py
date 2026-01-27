@@ -1,41 +1,33 @@
 from flask import Flask, request, jsonify, send_from_directory
 import yfinance as yf
 import numpy as np
-import talib
+from finta import TA
 import os
 
 app = Flask(__name__)
 
-# Serve frontend file directly from Flask
 @app.route('/')
 def home():
     return send_from_directory('.', 'index.html')
 
 @app.route('/analyze')
 def analyze():
-    # Get ticker from user
     raw_input = request.args.get('ticker', default='RELIANCE', type=str)
     ticker = raw_input.strip().upper().replace(" ", "").replace(",", "")
 
-    # Always append .NS for Indian NSE stocks
     if not ticker.endswith(".NS") and not ticker.endswith(".BO"):
         ticker += ".NS"
 
-    # Fetch last 6 months daily data
     data = yf.download(ticker, period='6mo', interval='1d')
     if data.empty:
         return jsonify({'error': f'No data found for {ticker}'}), 404
 
-    # Convert to 1D numpy arrays
-    close = data['Close'].to_numpy().astype(float).flatten()
-    high = data['High'].to_numpy().astype(float).flatten()
-    low = data['Low'].to_numpy().astype(float).flatten()
-    volume = data['Volume'].to_numpy().astype(float).flatten()
+    data = data.dropna()
 
     # --- Trend Analysis ---
-    sma_short = talib.SMA(close, timeperiod=10)
-    sma_long = talib.SMA(close, timeperiod=30)
-    trend = "UP" if sma_short[-1] > sma_long[-1] else "DOWN"
+    data['SMA_10'] = TA.SMA(data, 10)
+    data['SMA_30'] = TA.SMA(data, 30)
+    trend = "UP" if data['SMA_10'].iloc[-1] > data['SMA_30'].iloc[-1] else "DOWN"
     trend_msg = (
         "Stock abhi uptrend me hai (short-term average upar hai)."
         if trend == "UP"
@@ -43,13 +35,14 @@ def analyze():
     )
 
     # --- Entry Strategy ---
-    rsi = talib.RSI(close, timeperiod=14)
-    macd, macdsignal, macdhist = talib.MACD(close, fastperiod=12, slowperiod=26, signalperiod=9)
-    entry_price = round(close[-1], 2)
+    data['RSI'] = TA.RSI(data)
+    data['MACD'] = TA.MACD(data)['MACD']
+    entry_price = round(data['Close'].iloc[-1], 2)
     entry_range = f"{entry_price - 20:.2f} – {entry_price:.2f}"
     invalidation = f"{entry_price - 30:.2f}"
     entry_msg = (
-        f"RSI {rsi[-1]:.2f} (30 se neeche matlab oversold), MACD {macd[-1]:.2f}. "
+        f"RSI {data['RSI'].iloc[-1]:.2f} (30 se neeche matlab oversold), "
+        f"MACD {data['MACD'].iloc[-1]:.2f}. "
         f"Kharidne ka zone {entry_range}. Agar {invalidation} se neeche gaya to trade avoid karo."
     )
 
@@ -67,7 +60,7 @@ def analyze():
     )
 
     # --- Final Verdict ---
-    verdict = "Trade confidently" if trend == "UP" and volume[-1] > np.mean(volume[-10:]) else "Trade cautiously"
+    verdict = "Trade confidently" if trend == "UP" and data['Volume'].iloc[-1] > data['Volume'].tail(10).mean() else "Trade cautiously"
     verdict_msg = (
         f"{verdict} — "
         + (
