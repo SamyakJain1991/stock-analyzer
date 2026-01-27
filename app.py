@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, render_template
 import yfinance as yf
 import numpy as np
 from finta import TA
@@ -19,61 +19,59 @@ def analyze():
     if not ticker.endswith(".NS") and not ticker.endswith(".BO"):
         ticker += ".NS"
 
-    data = yf.download(ticker, period='6mo', interval='1d')
+    try:
+        data = yf.download(ticker, period='6mo', interval='1d')
+    except Exception as e:
+        return render_template('index.html', analysis={'error': f'Yahoo Finance error: {str(e)}'})
+
     if data.empty:
         return render_template('index.html', analysis={'error': f'No data found for {ticker}'})
 
     data = data.dropna()
 
+    # --- Safe helper for indicators ---
+    def safe_val(series, default="N/A"):
+        try:
+            val = series.iloc[-1]
+            if np.isnan(val):
+                return default
+            return round(val, 2)
+        except Exception:
+            return default
+
     # --- Trend Analysis ---
     data['SMA_10'] = TA.SMA(data, 10)
     data['SMA_30'] = TA.SMA(data, 30)
-    trend = "UP" if data['SMA_10'].iloc[-1] > data['SMA_30'].iloc[-1] else "DOWN"
-    trend_msg = (
-        "Stock abhi uptrend me hai (short-term average upar hai)."
-        if trend == "UP"
-        else "Stock abhi downtrend me hai (short-term average neeche hai)."
-    )
+    sma10 = safe_val(data['SMA_10'])
+    sma30 = safe_val(data['SMA_30'])
+    trend = "UP" if sma10 != "N/A" and sma30 != "N/A" and sma10 > sma30 else "DOWN"
+    trend_msg = "Stock abhi uptrend me hai." if trend == "UP" else "Stock abhi downtrend me hai."
 
     # --- Entry Strategy ---
     data['RSI'] = TA.RSI(data)
     data['MACD'] = TA.MACD(data)['MACD']
-    entry_price = round(data['Close'].iloc[-1], 2)
-    entry_range = f"{entry_price - 20:.2f} – {entry_price:.2f}"
-    invalidation = f"{entry_price - 30:.2f}"
-    entry_msg = (
-        f"RSI {data['RSI'].iloc[-1]:.2f} (30 se neeche matlab oversold), "
-        f"MACD {data['MACD'].iloc[-1]:.2f}. "
-        f"Kharidne ka zone {entry_range}. Agar {invalidation} se neeche gaya to trade avoid karo."
-    )
+    entry_price = safe_val(data['Close'])
+    entry_range = f"{entry_price - 20} – {entry_price}" if entry_price != "N/A" else "N/A"
+    invalidation = f"{entry_price - 30}" if entry_price != "N/A" else "N/A"
+    entry_msg = f"RSI {safe_val(data['RSI'])}, MACD {safe_val(data['MACD'])}. Zone {entry_range}. Invalidation {invalidation}."
 
     # --- Exit Strategy ---
-    exit_msg = (
-        f"Profit jaldi lena ho to {entry_price + 50:.2f} ke aas-paas exit karo. "
-        f"Safe exit {entry_price + 25:.2f} ke aas-paas hai."
-    )
+    exit_msg = f"Exit around {entry_price + 50}" if entry_price != "N/A" else "N/A"
 
     # --- Stop-loss Strategy ---
-    stop_loss = f"{entry_price - 25:.2f}"
-    stoploss_msg = (
-        f"Stop-loss {stop_loss} rakho. Agar stock us level se neeche gaya to turant exit karo. "
-        "Ek trade me apne capital ka sirf 1–2% risk lo."
-    )
+    stop_loss = f"{entry_price - 25}" if entry_price != "N/A" else "N/A"
+    stoploss_msg = f"Stop-loss {stop_loss} rakho."
 
     # --- Final Verdict ---
-    verdict = "Trade confidently" if trend == "UP" and data['Volume'].iloc[-1] > data['Volume'].tail(10).mean() else "Trade cautiously"
-    verdict_msg = (
-        f"{verdict} — "
-        + (
-            "trend strong hai aur liquidity healthy hai."
-            if verdict == "Trade confidently"
-            else "stock weak hai, isliye carefully trade karo. Volume theek hai."
-        )
-    )
+    verdict = "Trade confidently" if trend == "UP" and entry_price != "N/A" and data['Volume'].iloc[-1] > data['Volume'].tail(10).mean() else "Trade cautiously"
+    verdict_msg = f"{verdict} — liquidity check done."
 
     # --- Company Info ---
-    info = yf.Ticker(ticker).info
-    company_name = info.get("longName", "N/A")
+    try:
+        info = yf.Ticker(ticker).info or {}
+    except Exception:
+        info = {}
+    company_name = info.get("longName", ticker)
     sector = info.get("sector", "N/A")
     description = info.get("longBusinessSummary", "N/A")
 
