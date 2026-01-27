@@ -3,7 +3,6 @@ import requests
 import yfinance as yf
 import numpy as np
 from finta import TA
-import os
 
 app = Flask(__name__)
 
@@ -150,4 +149,4 @@ def analyze():
             verdict_msg = f"Final Verdict: Stock is {verdict_status}. Strong Sell Setup - RSI {rsi_val}, MACD {macd_val}, SMA downtrend confirmed."
         elif rsi_val != "N/A" and 45 <= rsi_val <= 55:
             verdict_status = "Neutral"
-            verdict_msg = f"Final Verdict: Stock
+            verdict_msg = f"Final Verdict: Stock is {verdict_status
