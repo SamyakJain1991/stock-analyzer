@@ -20,10 +20,7 @@ def sanitize_ticker(raw_input):
 # --- NSE India API fetch ---
 def fetch_nse_data(symbol):
     url = f"https://www.nseindia.com/api/quote-equity?symbol={symbol}"
-    headers = {
-        "User-Agent": "Mozilla/5.0",
-        "Accept": "application/json"
-    }
+    headers = {"User-Agent": "Mozilla/5.0", "Accept": "application/json"}
     try:
         session = requests.Session()
         resp = session.get(url, headers=headers, timeout=10)
@@ -41,38 +38,34 @@ def home():
 @app.route('/analyze')
 def analyze():
     try:
-        # --- Get ticker safely ---
         raw_input = request.args.get('ticker', default='RELIANCE')
         raw_input = sanitize_ticker(raw_input)
 
         # --- Try NSE API first ---
         nse_data = fetch_nse_data(raw_input)
         if nse_data:
-            # Parse NSE data
             info = nse_data.get("info", {})
             company_name = info.get("companyName", raw_input)
             sector = info.get("industry", "N/A")
-            description = info.get("desc", "NSE data available")
             last_price = nse_data.get("priceInfo", {}).get("lastPrice", "N/A")
 
             analysis = {
                 "ticker": raw_input,
                 "Company": company_name,
                 "Sector": sector,
-                "Description": description,
-                "Trend": "NSE data fetched successfully",
-                "Entry": f"Current price {last_price}",
-                "Exit": "Use NSE chart for exit strategy",
-                "StopLoss": "Use NSE chart for stop-loss",
-                "Verdict": "Data from NSE India API"
+                "Description": "NSE data available",
+                "Trend": "Trend Analysis: NSE data fetched successfully.",
+                "Entry": f"Entry Strategy: Current price {last_price}. Use NSE chart for RSI/MACD.",
+                "Exit": "Exit Strategy: Use NSE chart for exit strategy.",
+                "StopLoss": "Stop-Loss Strategy: Use NSE chart for stop-loss.",
+                "Verdict": "Final Verdict: Data from NSE India API."
             }
             return render_template('index.html', analysis=analysis)
 
         # --- Fallback to Yahoo Finance ---
         ticker = raw_input
         if not ticker.endswith(".NSE") and not ticker.endswith(".NS") and not ticker.endswith(".BO"):
-            ticker = ticker + ".NS"  # fallback suffix
-
+            ticker = ticker + ".NS"
         ticker = str(ticker)
 
         try:
@@ -82,7 +75,6 @@ def analyze():
 
         if data.empty:
             return render_template('index.html', analysis={'error': f'No data found for {ticker}'})
-
         data = data.dropna()
 
         def safe_val(series, default="N/A"):
@@ -100,7 +92,7 @@ def analyze():
         sma10 = safe_val(data['SMA_10'])
         sma30 = safe_val(data['SMA_30'])
         trend = "UP" if sma10 != "N/A" and sma30 != "N/A" and sma10 > sma30 else "DOWN"
-        trend_msg = "Stock abhi uptrend me hai." if trend == "UP" else "Stock abhi downtrend me hai."
+        trend_msg = f"Trend Analysis: Stock abhi {'uptrend' if trend=='UP' else 'downtrend'} me hai."
 
         # Entry Strategy
         data['RSI'] = TA.RSI(data)
@@ -108,20 +100,19 @@ def analyze():
         entry_price = safe_val(data['Close'])
         entry_range = f"{entry_price - 20} – {entry_price}" if entry_price != "N/A" else "N/A"
         invalidation = f"{entry_price - 30}" if entry_price != "N/A" else "N/A"
-        entry_msg = f"RSI {safe_val(data['RSI'])}, MACD {safe_val(data['MACD'])}. Zone {entry_range}. Invalidation {invalidation}."
+        entry_msg = f"Entry Strategy: RSI {safe_val(data['RSI'])}, MACD {safe_val(data['MACD'])}. Zone {entry_range}. Invalidation {invalidation}."
 
         # Exit Strategy
-        exit_msg = f"Exit around {entry_price + 50}" if entry_price != "N/A" else "N/A"
+        exit_msg = f"Exit Strategy: Exit around {entry_price + 50}" if entry_price != "N/A" else "Exit Strategy: N/A"
 
         # Stop-loss Strategy
         stop_loss = f"{entry_price - 25}" if entry_price != "N/A" else "N/A"
-        stoploss_msg = f"Stop-loss {stop_loss} rakho."
+        stoploss_msg = f"Stop-Loss Strategy: Stop-loss {stop_loss} rakho."
 
         # Final Verdict
         verdict = "Trade confidently" if trend == "UP" and entry_price != "N/A" and data['Volume'].iloc[-1] > data['Volume'].tail(10).mean() else "Trade cautiously"
-        verdict_msg = f"{verdict} — liquidity check done."
+        verdict_msg = f"Final Verdict: {verdict} — liquidity check done."
 
-        # Company Info
         try:
             info = yf.Ticker(str(ticker)).info or {}
         except Exception:
