@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request
+from flask import Flask, request
 import yfinance as yf
 import numpy as np
 from finta import TA
@@ -46,7 +46,36 @@ def index():
             else:
                 error = f"Error: {str(e)}"
 
-    return render_template('index.html', error=error, data=data)
+    # Direct HTML response (no templates folder needed)
+    html = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Stock Analyzer</title>
+    </head>
+    <body>
+        <h1>Stock Analyzer</h1>
+        <form method="POST">
+            <label>Enter Stock Ticker (e.g. RELIANCE.NS)</label>
+            <input type="text" name="ticker" required>
+            <button type="submit">Analyze</button>
+        </form>
+    """
+
+    if error:
+        html += f"<p style='color:red;'>Error: {error}</p>"
+
+    if data:
+        html += f"""
+        <h2>Results for {data['ticker']}</h2>
+        <p>Close Price: {data['close']}</p>
+        <p>SMA 20: {data['sma_20']}</p>
+        <p>SMA 50: {data['sma_50']}</p>
+        <p>RSI: {data['rsi']}</p>
+        """
+
+    html += "</body></html>"
+    return html
 
 if __name__ == '__main__':
     # Render requires binding to 0.0.0.0 and PORT env variable
