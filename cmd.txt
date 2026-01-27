@@ -1,0 +1,12 @@
+cd CUsersnetwarestock-analyzer
+
+git remote remove origin
+git remote add origin httpsgithub.comSamyakJain1991stock-analyzer.git
+
+git branch -M main
+
+git add .
+
+git commit -m Updated app.py with auto .NS fix and cleaned requirements.txt
+
+git push -u origin main --force
