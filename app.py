@@ -37,8 +37,11 @@ def analyze():
         if not ticker.endswith(".NS") and not ticker.endswith(".BO"):
             ticker += ".NS"
 
+        # --- Force string before yfinance ---
+        ticker = str(ticker)
+
         # Download data
-        data = yf.download(str(ticker), period='6mo', interval='1d')
+        data = yf.download(ticker, period='6mo', interval='1d')
         if data.empty:
             return render_template('index.html', analysis={'error': f'No data found for {ticker}'})
 
@@ -83,7 +86,7 @@ def analyze():
 
         # --- Company Info ---
         try:
-            info = yf.Ticker(str(ticker)).info or {}
+            info = yf.Ticker(ticker).info or {}
         except Exception:
             info = {}
         company_name = info.get("longName", ticker)
