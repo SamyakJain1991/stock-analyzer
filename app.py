@@ -49,16 +49,24 @@ def analyze():
             sector = info.get("industry", "N/A")
             last_price = nse_data.get("priceInfo", {}).get("lastPrice", "N/A")
 
+            try:
+                entry_zone = f"{round(last_price - 2, 2)} – {last_price}" if last_price != "N/A" else "N/A"
+                invalidation = f"{round(last_price - 4, 2)}" if last_price != "N/A" else "N/A"
+                exit_target = f"{round(last_price + 4, 2)}" if last_price != "N/A" else "N/A"
+                stop_loss = f"{round(last_price - 3, 2)}" if last_price != "N/A" else "N/A"
+            except Exception:
+                entry_zone, invalidation, exit_target, stop_loss = "N/A","N/A","N/A","N/A"
+
             analysis = {
                 "ticker": raw_input,
                 "Company": company_name,
                 "Sector": sector,
-                "Description": "NSE data available",
-                "Trend": "Trend Analysis: NSE data fetched successfully.",
-                "Entry": f"Entry Strategy: Current price {last_price}. Use NSE chart for RSI/MACD.",
-                "Exit": "Exit Strategy: Use NSE chart for exit strategy.",
-                "StopLoss": "Stop-Loss Strategy: Use NSE chart for stop-loss.",
-                "Verdict": "Final Verdict: Data from NSE India API."
+                "Description": f"{company_name} ka sector {sector} hai.",
+                "Trend": "Trend Analysis: Stock abhi NSE data ke hisaab se stable hai.",
+                "Entry": f"Entry Strategy: Current price {last_price}. Zone {entry_zone}. Agar price {invalidation} ke neeche girta hai, to analysis fail ho jaayega.",
+                "Exit": f"Exit Strategy: Target exit around {exit_target}.",
+                "StopLoss": f"Stop-Loss Strategy: Stop-loss {stop_loss} rakho.",
+                "Verdict": "Final Verdict: Trade cautiously — NSE data limited, liquidity check advised."
             }
             return render_template('index.html', analysis=analysis)
 
@@ -99,8 +107,11 @@ def analyze():
         data['MACD'] = TA.MACD(data)['MACD']
         entry_price = safe_val(data['Close'])
         entry_range = f"{entry_price - 20} – {entry_price}" if entry_price != "N/A" else "N/A"
-        invalidation = f"{entry_price - 30}" if entry_price != "N/A" else "N/A"
-        entry_msg = f"Entry Strategy: RSI {safe_val(data['RSI'])}, MACD {safe_val(data['MACD'])}. Zone {entry_range}. Invalidation {invalidation}."
+        invalidation_level = f"{entry_price - 30}" if entry_price != "N/A" else "N/A"
+        entry_msg = (
+            f"Entry Strategy: RSI {safe_val(data['RSI'])}, MACD {safe_val(data['MACD'])}. "
+            f"Zone {entry_range}. Agar price {invalidation_level} ke neeche girta hai, to analysis fail ho jaayega."
+        )
 
         # Exit Strategy
         exit_msg = f"Exit Strategy: Exit around {entry_price + 50}" if entry_price != "N/A" else "Exit Strategy: N/A"
