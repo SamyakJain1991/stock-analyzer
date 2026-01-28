@@ -7,6 +7,7 @@ import os
 
 app = Flask(__name__)
 
+# --- Helper: sanitize ticker ---
 def sanitize_ticker(raw_input):
     if raw_input is None:
         return "RELIANCE"
@@ -16,9 +17,14 @@ def sanitize_ticker(raw_input):
         raw_input = raw_input[0]
     return str(raw_input).strip().upper().replace(" ", "").replace(",", "")
 
+# --- NSE realtime fetch ---
 def fetch_nse_data(symbol):
     url = f"https://www.nseindia.com/api/quote-equity?symbol={symbol}"
-    headers = {"User-Agent": "Mozilla/5.0", "Accept": "application/json"}
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+        "Accept": "application/json",
+        "Referer": "https://www.nseindia.com/"
+    }
     try:
         session = requests.Session()
         resp = session.get(url, headers=headers, timeout=10)
@@ -38,7 +44,7 @@ def analyze():
     raw_input = request.args.get('ticker', default='RELIANCE')
     raw_input = sanitize_ticker(raw_input)
 
-    # --- NSE API ---
+    # --- NSE API first ---
     nse_data = fetch_nse_data(raw_input)
     if nse_data:
         info = nse_data.get("info", {})
@@ -55,26 +61,26 @@ def analyze():
             elif last_price < prev_close:
                 score -= 1
 
-        # Verdict logic for NSE
+        # Verdict logic
         if score >= 3:
-            verdict_msg = f"🟢 Strong Buy — Multiple bullish signals. High-confidence buying opportunity! (Score {score})"
+            verdict_msg = f"🟢 Strong Buy — Multiple bullish signals. (Score {score})"
             entry_zone = f"₹{round(last_price*0.97,2)} – ₹{round(last_price*0.99,2)}"
             stop_loss = f"₹{round(last_price*0.95,2)}"
         elif score in [1,2]:
-            verdict_msg = f"⚠️ Cautious Buy — Mild bullish momentum, but not fully confirmed. (Score {score})"
+            verdict_msg = f"⚠️ Cautious Buy — Mild bullish momentum. (Score {score})"
             entry_zone = f"₹{round(last_price*0.97,2)} – ₹{round(last_price*0.99,2)}"
             stop_loss = f"₹{round(last_price*0.95,2)}"
         elif score <= -3:
-            verdict_msg = f"🔴 Strong Sell — Multiple bearish signals. Avoid buying. (Score {score})"
-            entry_zone = f"Sell near ₹{last_price}, target lower levels."
+            verdict_msg = f"🔴 Strong Sell — Multiple bearish signals. (Score {score})"
+            entry_zone = f"Sell near ₹{last_price}"
             stop_loss = f"₹{round(last_price*1.02,2)}"
         elif score in [-1,-2]:
-            verdict_msg = f"⚠️ Cautious Sell — Mild bearish momentum, but not fully confirmed. (Score {score})"
-            entry_zone = f"Sell near ₹{last_price}, target lower levels."
+            verdict_msg = f"⚠️ Cautious Sell — Mild bearish momentum. (Score {score})"
+            entry_zone = f"Sell near ₹{last_price}"
             stop_loss = f"₹{round(last_price*1.02,2)}"
         else:
-            verdict_msg = f"⚖️ Neutral — No clear momentum. Trade cautiously. (Score {score})"
-            entry_zone = "Wait for clearer signals before entry."
+            verdict_msg = f"⚖️ Neutral — No clear momentum. (Score {score})"
+            entry_zone = "Wait for clearer signals."
             stop_loss = "N/A"
 
         analysis = {
@@ -95,7 +101,6 @@ def analyze():
     if not ticker.endswith(".NSE") and not ticker.endswith(".NS") and not ticker.endswith(".BO"):
         ticker = ticker + ".NS"
 
-    # Universal retry logic
     data = yf.download(ticker, period='6mo', interval='1d')
     if data.empty:
         alt_ticker = raw_input + ".BO"
@@ -138,55 +143,53 @@ def analyze():
     bb_lower = safe_val(data['BB_lower'])
     volume_check = data['Volume'].iloc[-1] > data['Volume'].tail(10).mean()
 
-    # Scoring system
+    # Scoring
     score = 0
     details = []
 
     if sma10 != "N/A" and sma30 != "N/A" and sma10 > sma30:
         score += 1
-        details.append("📈 Short-term average above long-term → Uptrend (+1)")
+        details.append("📈 SMA crossover bullish (+1)")
     else:
         score -= 1
-        details.append("📉 Short-term average below long-term → Downtrend (-1)")
+        details.append("📉 SMA crossover bearish (-1)")
 
     if ema20 != "N/A" and close_price != "N/A" and close_price > ema20:
         score += 1
-        details.append("📈 Price above EMA20 → Bullish (+1)")
+        details.append("📈 Price above EMA20 (+1)")
     else:
         score -= 1
-        details.append("📉 Price below EMA20 → Bearish (-1)")
+        details.append("📉 Price below EMA20 (-1)")
 
     if rsi_val != "N/A":
         if rsi_val > 55:
             score += 1
-            details.append(f"💪 RSI {rsi_val} → Buyers strong (+1)")
+            details.append(f"💪 RSI {rsi_val} bullish (+1)")
         elif rsi_val < 45:
             score -= 1
-            details.append(f"😓 RSI {rsi_val} → Sellers strong (-1)")
-        else:
-            details.append(f"⚖️ RSI {rsi_val} → Neutral (0)")
+            details.append(f"😓 RSI {rsi_val} bearish (-1)")
 
     if macd_val != "N/A":
         if macd_val > 0:
             score += 1
-            details.append(f"📊 MACD {macd_val} → Positive crossover (+1)")
+            details.append(f"📊 MACD {macd_val} positive (+1)")
         else:
             score -= 1
-            details.append(f"📊 MACD {macd_val} → Negative crossover (-1)")
+            details.append(f"📊 MACD {macd_val} negative (-1)")
 
     if bb_upper != "N/A" and bb_lower != "N/A" and close_price != "N/A":
         if close_price < bb_lower:
             score += 1
-            details.append("📉 Price near lower Bollinger Band → Possible rebound (+1)")
+            details.append("📉 Near lower Bollinger Band rebound (+1)")
         elif close_price > bb_upper:
             score -= 1
-            details.append("📈 Price near upper Bollinger Band → Overbought (-1)")
+            details.append("📈 Near upper Bollinger Band overbought (-1)")
 
     if volume_check:
         score += 1
-        details.append("🔊 Volume spike → Strong participation (+1)")
+        details.append("🔊 Volume spike (+1)")
 
-
+   
     # Final verdict + entry zone
     if score >= 3:
         verdict_msg = f"🟢 Strong Buy — All indicators aligned bullish. High-confidence buying opportunity! (Score {score})"
