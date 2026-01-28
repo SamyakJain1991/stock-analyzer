@@ -132,29 +132,25 @@ def analyze():
         stoploss_msg = f"Stop-loss Strategy: Stop-loss {stop_loss} rakho."
 
         # Verdict
-        if trend == "UP" and rsi_val != "N/A" and rsi_val > 55 and macd_val != "N/A" and macd_val > 0 and volume_check:
-            verdict_status = "Bullish"
-            verdict_msg = f"Final Verdict: Stock is {verdict_status}. Strong Buy Setup - RSI {rsi_val}, MACD {macd_val}, SMA crossover confirmed, volume above average."
-        elif trend == "DOWN" and rsi_val != "N/A" and rsi_val < 45 and macd_val != "N/A" and macd_val < 0:
-            verdict_status = "Bearish"
-            verdict_msg = f"Final Verdict: Stock is {verdict_status}. Strong Sell Setup - RSI {rsi_val}, MACD {macd_val}, SMA downtrend confirmed."
-        elif rsi_val != "N/A" and 45 <= rsi_val <= 55:
-            verdict_status = "Neutral"
-            verdict_msg = f"Final Verdict: Stock is {verdict_status}. Wait for Confirmation - RSI {rsi_val} indicates sideways momentum."
-        else:
-            verdict_status = "Mixed"
-            verdict_msg = f"Final Verdict: Signals are mixed. Trade cautiously - need clearer confirmation."
+        try:
+            if trend == "UP" and rsi_val != "N/A" and rsi_val > 55 and macd_val != "N/A" and macd_val > 0 and volume_check:
+                verdict_status = "Bullish"
+                verdict_msg = f"Final Verdict: Stock is {verdict_status}. Strong Buy Setup - RSI {rsi_val}, MACD {macd_val}, SMA crossover confirmed, volume above average."
+            elif trend == "DOWN" and rsi_val != "N/A" and rsi_val < 45 and macd_val != "N/A" and macd_val < 0:
+                verdict_status = "Bearish"
+                verdict_msg = f"Final Verdict: Stock is {verdict_status}. Strong Sell Setup - RSI {rsi_val}, MACD {macd_val}, SMA downtrend confirmed."
+            elif rsi_val != "N/A" and 45 <= rsi_val <= 55:
+                verdict_status = "Neutral"
+                verdict_msg = f"Final Verdict: Stock is {verdict_status}. Wait for Confirmation - RSI {rsi_val} indicates sideways momentum."
+            else:
+                verdict_status = "Mixed"
+                verdict_msg = f"Final Verdict: Signals are mixed. Trade cautiously - need clearer confirmation."
+        except Exception as e:
+            verdict_status = "Error"
+            verdict_msg = f"Final Verdict: Error occurred - {str(e)}"
 
         analysis = {
             "ticker": raw_input,
             "Company": ticker,
             "Sector": "N/A",
-            "Description": f"{ticker} ka sector data unavailable hai.",
-            "Trend": trend_msg,
-            "Entry": entry_msg,
-            "SuggestedEntry": suggested_entry,
-            "Exit": exit_msg,
-            "StopLoss": stoploss_msg,
-            "Verdict": verdict_msg
-        }
-       
+            "Description": f"{ticker} ka sector data
