@@ -140,4 +140,11 @@ def analyze():
                 verdict_status = "Bearish"
                 verdict_msg = f"Final Verdict: Stock is {verdict_status}. Strong Sell Setup - RSI {rsi_val}, MACD {macd_val}, SMA downtrend confirmed."
             elif rsi_val != "N/A" and 45 <= rsi_val <= 55:
-                verdict_status = "Neutral
+                verdict_status = "Neutral"
+                verdict_msg = f"Final Verdict: Stock is {verdict_status}. Wait for Confirmation - RSI {rsi_val} indicates sideways momentum."
+            else:
+                verdict_status = "Mixed"
+                verdict_msg = f"Final Verdict: Signals are mixed. Trade cautiously - need clearer confirmation."
+        except Exception as e:
+            verdict_status = "Error"
+           
