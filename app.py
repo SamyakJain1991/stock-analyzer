@@ -149,7 +149,7 @@ def analyze():
             verdict_status = "Error"
             verdict_msg = f"Final Verdict: Error occurred - {str(e)}"
 
-        analysis = {
+         analysis = {
             "ticker": raw_input,
             "Company": ticker,
             "Sector": "N/A",
@@ -160,6 +160,6 @@ def analyze():
             "Exit": exit_msg,
             "StopLoss": stoploss_msg,
             "Verdict": verdict_msg
-        }
+         }
 
-        return render_template('index.html', analysis=analysis)
+         return render_template('index.html', analysis=analysis)
