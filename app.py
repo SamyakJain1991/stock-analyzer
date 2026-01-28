@@ -48,16 +48,24 @@ def analyze():
         last_price = prices.get("lastPrice", "N/A")
         prev_close = prices.get("previousClose", "N/A")
 
-        verdict_status = "Bullish" if last_price != "N/A" and prev_close != "N/A" and last_price > prev_close else "Bearish"
+        score = 0
+        if last_price != "N/A" and prev_close != "N/A":
+            if last_price > prev_close:
+                score += 1
+            elif last_price < prev_close:
+                score -= 1
 
-        # Entry zone logic for NSE data
-        if verdict_status == "Bullish":
+        # Verdict logic for NSE
+        if score >= 1:
+            verdict_msg = f"🟢 Strong Buy — Price above previous close. Bullish momentum detected! (Score {score})"
             entry_zone = f"₹{round(last_price*0.97,2)} – ₹{round(last_price*0.99,2)}"
             stop_loss = f"₹{round(last_price*0.95,2)}"
-        elif verdict_status == "Bearish":
+        elif score <= -1:
+            verdict_msg = f"🔴 Strong Sell — Price below previous close. Bearish momentum detected! (Score {score})"
             entry_zone = f"Sell near ₹{last_price}, target lower levels."
             stop_loss = f"₹{round(last_price*1.02,2)}"
         else:
+            verdict_msg = f"⚖️ Neutral — No clear momentum. Trade cautiously. (Score {score})"
             entry_zone = "Wait for clearer signals before entry."
             stop_loss = "N/A"
 
@@ -66,11 +74,11 @@ def analyze():
             "Company": company_name,
             "Sector": sector,
             "Description": f"📌 {company_name} ka sector {sector} hai.",
-            "Trend": f"📈 Trend Analysis: Stock abhi {verdict_status} lag raha hai (NSE data ke hisaab se).",
+            "Trend": f"📈 Trend Analysis: {verdict_msg}",
             "Entry": f"🎯 Suggested Entry Zone: {entry_zone}",
             "Exit": f"✅ Exit Strategy: Target exit around ₹{round(last_price*1.03,2)}" if last_price!="N/A" else "N/A",
             "StopLoss": f"🛑 Stop-loss Strategy: {stop_loss}",
-            "Verdict": f"⚖️ Final Verdict: Stock is {verdict_status}. Trade cautiously — NSE data limited."
+            "Verdict": verdict_msg
         }
         return render_template('index.html', analysis=analysis)
 
