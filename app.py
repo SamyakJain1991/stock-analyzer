@@ -154,4 +154,12 @@ def analyze():
             "Company": ticker,
             "Sector": "N/A",
             "Description": f"{ticker} ka sector data unavailable hai.",
-            "Trend":
+            "Trend": trend_msg,
+            "Entry": entry_msg,
+            "SuggestedEntry": suggested_entry,
+            "Exit": exit_msg,
+            "StopLoss": stoploss_msg,
+            "Verdict": verdict_msg
+        }
+
+        return render_template('index.html', analysis=analysis)
