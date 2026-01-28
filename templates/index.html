@@ -6,65 +6,101 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 30px;
-            background-color: #f9f9f9;
+            background: #f4f6f9;
+            margin: 0;
+            padding: 20px;
         }
         h1 {
-            color: #2c3e50;
+            text-align: center;
+            color: #333;
         }
         form {
+            text-align: center;
             margin-bottom: 20px;
         }
         input[type="text"] {
-            padding: 8px;
+            padding: 10px;
             width: 250px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
         }
         button {
-            padding: 8px 15px;
-            background-color: #3498db;
-            color: white;
+            padding: 10px 20px;
+            margin-left: 10px;
             border: none;
+            border-radius: 5px;
+            background: #007bff;
+            color: white;
             cursor: pointer;
         }
         button:hover {
-            background-color: #2980b9;
+            background: #0056b3;
         }
         .card {
             background: white;
+            border-radius: 8px;
             padding: 15px;
-            margin-top: 20px;
-            border-radius: 5px;
+            margin: 15px auto;
+            max-width: 600px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
-        .error {
-            color: red;
+        .verdict {
             font-weight: bold;
+            font-size: 1.2em;
+        }
+        .bullish { background-color: #d4edda; }
+        .bearish { background-color: #f8d7da; }
+        .neutral { background-color: #fff3cd; }
+        ul {
+            padding-left: 20px;
         }
     </style>
 </head>
 <body>
-    <h1>📈 Stock Analyzer</h1>
-    <form method="get" action="/analyze">
-        <label>Enter Stock Ticker (e.g. RELIANCE)</label>
-        <input type="text" name="ticker" required>
+    <h1>🔍 Stock Analyzer</h1>
+    <form action="/analyze" method="get">
+        <input type="text" name="ticker" placeholder="Enter Stock Ticker (e.g. RELIANCE)">
         <button type="submit">Analyze</button>
     </form>
 
     {% if analysis %}
         <div class="card">
-            {% if analysis.error %}
-                <p class="error">Error: {{ analysis.error }}</p>
-            {% else %}
-                <h2>{{ analysis.Company }} ({{ analysis.ticker }})</h2>
-                <p><strong>Sector:</strong> {{ analysis.Sector }}</p>
-                <p><strong>Description:</strong> {{ analysis.Description }}</p>
-                <hr>
-                <p><strong>Trend:</strong> {{ analysis.Trend }}</p>
-                <p><strong>Entry Strategy:</strong> {{ analysis.Entry }}</p>
-                <p><strong>Exit Strategy:</strong> {{ analysis.Exit }}</p>
-                <p><strong>Stop-Loss:</strong> {{ analysis.StopLoss }}</p>
-                <p><strong>Verdict:</strong> {{ analysis.Verdict }}</p>
-            {% endif %}
+            <h2>📌 Company Info</h2>
+            <p><strong>{{ analysis['Company'] }}</strong></p>
+            <p>Sector: {{ analysis['Sector'] }}</p>
+            <p>{{ analysis['Description'] }}</p>
+        </div>
+
+        <div class="card">
+            <h2>📈 Trend</h2>
+            <p>{{ analysis['Trend'] }}</p>
+        </div>
+
+        <div class="card">
+            <h2>📊 Indicators</h2>
+            <ul>
+                {% for detail in analysis['Indicators'] %}
+                    <li>{{ detail }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="card">
+            <h2>🎯 Entry Strategy</h2>
+            <p>{{ analysis['Entry'] }}</p>
+            <p>{{ analysis['SuggestedEntry'] }}</p>
+        </div>
+
+        <div class="card">
+            <h2>✅ Exit & Stoploss</h2>
+            <p>{{ analysis['Exit'] }}</p>
+            <p>{{ analysis['StopLoss'] }}</p>
+        </div>
+
+        <div class="card verdict 
+            {% if 'Buy' in analysis['Verdict'] %}bullish{% elif 'Sell' in analysis['Verdict'] %}bearish{% else %}neutral{% endif %}">
+            <h2>⚖️ Final Verdict</h2>
+            <p>{{ analysis['Verdict'] }}</p>
         </div>
     {% endif %}
 </body>
