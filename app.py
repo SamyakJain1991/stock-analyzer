@@ -56,12 +56,20 @@ def analyze():
                 score -= 1
 
         # Verdict logic for NSE
-        if score >= 1:
-            verdict_msg = f"🟢 Strong Buy — Price above previous close. Bullish momentum detected! (Score {score})"
+        if score >= 3:
+            verdict_msg = f"🟢 Strong Buy — Multiple bullish signals. High-confidence buying opportunity! (Score {score})"
             entry_zone = f"₹{round(last_price*0.97,2)} – ₹{round(last_price*0.99,2)}"
             stop_loss = f"₹{round(last_price*0.95,2)}"
-        elif score <= -1:
-            verdict_msg = f"🔴 Strong Sell — Price below previous close. Bearish momentum detected! (Score {score})"
+        elif score in [1,2]:
+            verdict_msg = f"⚠️ Cautious Buy — Mild bullish momentum, but not fully confirmed. (Score {score})"
+            entry_zone = f"₹{round(last_price*0.97,2)} – ₹{round(last_price*0.99,2)}"
+            stop_loss = f"₹{round(last_price*0.95,2)}"
+        elif score <= -3:
+            verdict_msg = f"🔴 Strong Sell — Multiple bearish signals. Avoid buying. (Score {score})"
+            entry_zone = f"Sell near ₹{last_price}, target lower levels."
+            stop_loss = f"₹{round(last_price*1.02,2)}"
+        elif score in [-1,-2]:
+            verdict_msg = f"⚠️ Cautious Sell — Mild bearish momentum, but not fully confirmed. (Score {score})"
             entry_zone = f"Sell near ₹{last_price}, target lower levels."
             stop_loss = f"₹{round(last_price*1.02,2)}"
         else:
