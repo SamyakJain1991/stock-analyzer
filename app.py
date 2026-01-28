@@ -52,11 +52,14 @@ def analyze():
 
         # Entry zone logic for NSE data
         if verdict_status == "Bullish":
-            entry_zone = f"₹{round(last_price*0.98,2)} – ₹{round(last_price*0.995,2)}"
+            entry_zone = f"₹{round(last_price*0.97,2)} – ₹{round(last_price*0.99,2)}"
+            stop_loss = f"₹{round(last_price*0.95,2)}"
         elif verdict_status == "Bearish":
             entry_zone = f"Sell near ₹{last_price}, target lower levels."
+            stop_loss = f"₹{round(last_price*1.02,2)}"
         else:
             entry_zone = "Wait for clearer signals before entry."
+            stop_loss = "N/A"
 
         analysis = {
             "ticker": raw_input,
@@ -66,7 +69,7 @@ def analyze():
             "Trend": f"📈 Trend Analysis: Stock abhi {verdict_status} lag raha hai (NSE data ke hisaab se).",
             "Entry": f"🎯 Suggested Entry Zone: {entry_zone}",
             "Exit": f"✅ Exit Strategy: Target exit around ₹{round(last_price*1.03,2)}" if last_price!="N/A" else "N/A",
-            "StopLoss": f"🛑 Stop-loss Strategy: Stop-loss ₹{round(last_price*0.98,2)}" if last_price!="N/A" else "N/A",
+            "StopLoss": f"🛑 Stop-loss Strategy: {stop_loss}",
             "Verdict": f"⚖️ Final Verdict: Stock is {verdict_status}. Trade cautiously — NSE data limited."
         }
         return render_template('index.html', analysis=analysis)
@@ -167,18 +170,22 @@ def analyze():
     # Final verdict + entry zone
     if score >= 3:
         verdict_msg = f"🟢 Strong Buy — All indicators aligned bullish. High-confidence buying opportunity! (Score {score})"
-        entry_zone = f"₹{round(close_price*0.98,2)} – ₹{round(close_price*0.995,2)}"
+        entry_zone = f"₹{round(close_price*0.97,2)} – ₹{round(close_price*0.99,2)}"
+        stop_loss = f"₹{round(close_price*0.95,2)}"
     elif score <= -3:
         verdict_msg = f"🔴 Strong Sell — Indicators show bearish momentum. Avoid buying, shorting may be considered. (Score {score})"
         entry_zone = f"Sell near ₹{close_price}, target lower levels."
+        stop_loss = f"₹{round(close_price*1.02,2)}"
     elif -2 <= score <= 2:
         verdict_msg = f"⚖️ Neutral — Signals are mixed. Best to wait for confirmation. (Score {score})"
         entry_zone = "Wait for clearer signals before entry."
+        stop_loss = "N/A"
     else:
         verdict_msg = f"❓ Mixed — Indicators conflict. Trade cautiously. (Score {score})"
         entry_zone = "No clear entry zone."
+        stop_loss = "N/A"
 
-  
+      
     analysis = {
         "ticker": raw_input,
         "Company": ticker,
