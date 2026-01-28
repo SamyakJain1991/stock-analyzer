@@ -143,4 +143,18 @@ def analyze():
             verdict_msg = f"Final Verdict: Stock is {verdict_status}. Wait for Confirmation - RSI {rsi_val} indicates sideways momentum."
         else:
             verdict_status = "Mixed"
-            verdict_msg = f"Final Verdict
+            verdict_msg = f"Final Verdict: Signals are mixed. Trade cautiously - need clearer confirmation."
+
+        analysis = {
+            "ticker": raw_input,
+            "Company": ticker,
+            "Sector": "N/A",
+            "Description": f"{ticker} ka sector data unavailable hai.",
+            "Trend": trend_msg,
+            "Entry": entry_msg,
+            "SuggestedEntry": suggested_entry,
+            "Exit": exit_msg,
+            "StopLoss": stoploss_msg,
+            "Verdict": verdict_msg
+        }
+       
