@@ -17,7 +17,7 @@ def sanitize_ticker(raw_input):
         raw_input = raw_input[0]
     return str(raw_input).strip().upper().replace(" ", "").replace(",", "")
 
-# --- NSE realtime fetch ---
+# --- NSE realtime fetch with cookie priming ---
 def fetch_nse_data(symbol):
     url = f"https://www.nseindia.com/api/quote-equity?symbol={symbol}"
     headers = {
@@ -27,6 +27,8 @@ def fetch_nse_data(symbol):
     }
     try:
         session = requests.Session()
+        # Priming step: hit homepage to set cookies
+        session.get("https://www.nseindia.com", headers=headers, timeout=10)
         resp = session.get(url, headers=headers, timeout=10)
         if resp.status_code == 200:
             return resp.json()
@@ -188,9 +190,8 @@ def analyze():
     if volume_check:
         score += 1
         details.append("🔊 Volume spike (+1)")
-
-   
-    # Final verdict + entry zone
+ 
+# Final verdict + entry zone
     if score >= 3:
         verdict_msg = f"🟢 Strong Buy — All indicators aligned bullish. High-confidence buying opportunity! (Score {score})"
         entry_zone = f"₹{round(close_price*0.97,2)} – ₹{round(close_price*0.99,2)}"
