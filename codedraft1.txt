@@ -2,7 +2,6 @@ from flask import Flask, request, render_template
 import requests
 import yfinance as yf
 import numpy as np
-import pandas as pd
 from finta import TA
 import os
 
@@ -28,6 +27,7 @@ def fetch_nse_data(symbol):
     }
     try:
         session = requests.Session()
+        # Priming step: hit homepage to set cookies
         session.get("https://www.nseindia.com", headers=headers, timeout=10)
         resp = session.get(url, headers=headers, timeout=10)
         if resp.status_code == 200:
@@ -37,25 +37,13 @@ def fetch_nse_data(symbol):
     except Exception:
         return None
 
-# --- NSE stock list for dropdown ---
-def get_nse_stock_list():
-    try:
-        url = "https://www.nseindia.com/content/equities/EQUITY_L.csv"
-        df = pd.read_csv(url)
-        return df['SYMBOL'].dropna().tolist()
-    except Exception as e:
-        print("Error fetching NSE list:", e)
-        return ["SBIN", "TCS", "INFY", "RELIANCE", "HDFCBANK"]
-
-STOCK_LIST = get_nse_stock_list()
-
 @app.route('/')
 def home():
-    return render_template('index.html', analysis=None, stock_list=STOCK_LIST)
+    return render_template('index.html', analysis=None)
 
-@app.route('/analyze', methods=["GET", "POST"])
+@app.route('/analyze')
 def analyze():
-    raw_input = request.args.get('ticker') or request.form.get('ticker') or request.form.get('search') or "RELIANCE"
+    raw_input = request.args.get('ticker', default='RELIANCE')
     raw_input = sanitize_ticker(raw_input)
 
     # --- NSE API first ---
@@ -108,7 +96,7 @@ def analyze():
             "StopLoss": f"🛑 Stop-loss Strategy: {stop_loss}",
             "Verdict": verdict_msg
         }
-        return render_template('index.html', analysis=analysis, stock_list=STOCK_LIST)
+        return render_template('index.html', analysis=analysis)
 
     # --- Yahoo Finance fallback ---
     ticker = raw_input
@@ -123,7 +111,7 @@ def analyze():
         alt_ticker = raw_input
         data = yf.download(alt_ticker, period='6mo', interval='1d')
     if data.empty:
-        return render_template('index.html', analysis={'error': f'No data found for {raw_input}'}, stock_list=STOCK_LIST)
+        return render_template('index.html', analysis={'error': f'No data found for {raw_input}'})
     data = data.dropna()
 
     def safe_val(series, default="N/A"):
@@ -191,7 +179,6 @@ def analyze():
             score -= 1
             details.append(f"📊 MACD {macd_val} negative (-1)")
 
-   
     if bb_upper != "N/A" and bb_lower != "N/A" and close_price != "N/A":
         if close_price < bb_lower:
             score += 1
