@@ -161,15 +161,19 @@ def analyze():
     if score >= 3:
         verdict = "🟢 Strong Buy"
         verdict_msg = f"All indicators aligned bullish. High-confidence buying opportunity! (Score {score})"
+        entry_zone = f"₹{round(close_price*0.98,2)} – ₹{round(close_price*0.995,2)}"
     elif score <= -3:
         verdict = "🔴 Strong Sell"
         verdict_msg = f"Indicators show bearish momentum. Avoid buying, shorting may be considered. (Score {score})"
+        entry_zone = f"Sell near ₹{close_price}, target lower levels."
     elif -2 <= score <= 2:
         verdict = "⚖️ Neutral"
         verdict_msg = f"Signals are mixed. Best to wait for confirmation. (Score {score})"
+        entry_zone = "Wait for clearer signals before entry."
     else:
         verdict = "❓ Mixed"
         verdict_msg = f"Indicators conflict. Trade cautiously. (Score {score})"
+        entry_zone = "No clear entry zone."
 
     analysis = {
         "ticker": raw_input,
@@ -179,7 +183,7 @@ def analyze():
         "Indicators": details,
         "Score": score,
         "Verdict": verdict_msg,
-        "Entry": f"🎯 Suggested Entry Zone: ₹{round(close_price*0.99,2)} – ₹{close_price}" if close_price!="N/A" else "N/A",
+        "Entry": f"🎯 Suggested Entry Zone: {entry_zone}",
         "Exit": f"✅ Target Exit: ₹{round(close_price*1.03,2)}" if close_price!="N/A" else "N/A",
         "StopLoss": f"🛑 Stop-loss: ₹{round(close_price*0.98,2)}" if close_price!="N/A" else "N/A"
     }
