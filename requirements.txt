@@ -1,4 +1,6 @@
 flask
+gunicorn
+requests
 yfinance
 numpy
 finta
