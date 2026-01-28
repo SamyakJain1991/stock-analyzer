@@ -3,6 +3,7 @@ import requests
 import yfinance as yf
 import numpy as np
 from finta import TA
+import os
 
 app = Flask(__name__)
 
