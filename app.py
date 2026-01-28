@@ -48,16 +48,7 @@ def analyze():
         last_price = prices.get("lastPrice", "N/A")
         prev_close = prices.get("previousClose", "N/A")
 
-        try:
-            entry_zone = f"{round(last_price * 0.99, 2)} – {last_price}" if last_price != "N/A" else "N/A"
-            invalidation = f"{round(last_price * 0.98, 2)}" if last_price != "N/A" else "N/A"
-            exit_target = f"{round(last_price * 1.03, 2)}" if last_price != "N/A" else "N/A"
-            stop_loss = f"{round(last_price * 0.98, 2)}" if last_price != "N/A" else "N/A"
-        except Exception:
-            entry_zone, invalidation, exit_target, stop_loss = "N/A", "N/A", "N/A", "N/A"
-
         verdict_status = "Bullish" if last_price != "N/A" and prev_close != "N/A" and last_price > prev_close else "Bearish"
-        suggested_entry = f"Suggested Entry Price: {entry_zone} (basic NSE calculation)"
 
         analysis = {
             "ticker": raw_input,
@@ -65,10 +56,10 @@ def analyze():
             "Sector": sector,
             "Description": f"{company_name} ka sector {sector} hai.",
             "Trend": f"Trend Analysis: Stock abhi {verdict_status} lag raha hai (NSE data ke hisaab se).",
-            "Entry": f"Entry Strategy: Current price {last_price}. Zone {entry_zone}. Agar price {invalidation} ke neeche girta hai, to analysis fail ho jaayega.",
-            "SuggestedEntry": suggested_entry,
-            "Exit": f"Exit Strategy: Target exit around {exit_target}.",
-            "StopLoss": f"Stop-Loss Strategy: Stop-loss {stop_loss} rakho.",
+            "Entry": f"Entry Strategy: Current price {last_price}.",
+            "SuggestedEntry": f"Suggested Entry Price: {last_price} (basic NSE calculation)",
+            "Exit": f"Exit Strategy: Target exit around {round(last_price*1.03,2)}" if last_price!="N/A" else "N/A",
+            "StopLoss": f"Stop-loss Strategy: Stop-loss {round(last_price*0.98,2)}" if last_price!="N/A" else "N/A",
             "Verdict": f"Final Verdict: Stock is {verdict_status}. Trade cautiously — NSE data limited."
         }
         return render_template('index.html', analysis=analysis)
@@ -96,73 +87,103 @@ def analyze():
         except Exception:
             return default
 
-    # Trend
+    # Indicators
     data['SMA_10'] = TA.SMA(data, 10)
     data['SMA_30'] = TA.SMA(data, 30)
+    data['EMA_20'] = TA.EMA(data, 20)
+    data['RSI'] = TA.RSI(data)
+    macd_line = TA.MACD(data)['MACD']
+    data['MACD'] = macd_line
+    bb = TA.BBANDS(data)
+    data['BB_upper'] = bb['BB_UPPER']
+    data['BB_lower'] = bb['BB_LOWER']
+
+    # Values
     sma10 = safe_val(data['SMA_10'])
     sma30 = safe_val(data['SMA_30'])
-    trend = "UP" if sma10 != "N/A" and sma30 != "N/A" and sma10 > sma30 else "DOWN"
-    trend_msg = f"Trend Analysis: Stock abhi {'uptrend' if trend=='UP' else 'downtrend'} me hai."
-
-    # Entry
-    data['RSI'] = TA.RSI(data)
-    data['MACD'] = TA.MACD(data)['MACD']
-    entry_price = safe_val(data['Close'])
-    entry_range = f"{round(entry_price * 0.99, 2)} – {entry_price}" if entry_price != "N/A" else "N/A"
-    invalidation_level = f"{round(entry_price * 0.98, 2)}" if entry_price != "N/A" else "N/A"
-    entry_msg = f"Entry Strategy: RSI {safe_val(data['RSI'])}, MACD {safe_val(data['MACD'])}. Zone {entry_range}. Agar price {invalidation_level} ke neeche girta hai, to analysis fail ho jaayega."
-
-    # Suggested Entry
+    ema20 = safe_val(data['EMA_20'])
     rsi_val = safe_val(data['RSI'])
     macd_val = safe_val(data['MACD'])
+    close_price = safe_val(data['Close'])
+    bb_upper = safe_val(data['BB_upper'])
+    bb_lower = safe_val(data['BB_lower'])
     volume_check = data['Volume'].iloc[-1] > data['Volume'].tail(10).mean()
 
-    if trend == "UP" and rsi_val != "N/A" and rsi_val > 55 and macd_val != "N/A" and macd_val > 0 and volume_check:
-        suggested_entry = f"Suggested Entry Price: {round(entry_price * 0.99, 2)} – {entry_price} (near support zone)"
-    elif trend == "DOWN" and rsi_val != "N/A" and rsi_val < 45 and macd_val != "N/A" and macd_val < 0:
-        suggested_entry = f"Suggested Entry Price: {round(entry_price * 1.01, 2)}+ (shorting opportunity)"
-    elif rsi_val != "N/A" and 45 <= rsi_val <= 55:
-        suggested_entry = "Suggested Entry Price: Wait for confirmation, no clear entry."
+    # Scoring system
+    score = 0
+    details = []
+
+    if sma10 != "N/A" and sma30 != "N/A" and sma10 > sma30:
+        score += 1
+        details.append("SMA10 > SMA30 → Uptrend (+1)")
     else:
-        suggested_entry = "Suggested Entry Price: Signals mixed, trade cautiously."
+        score -= 1
+        details.append("SMA10 < SMA30 → Downtrend (-1)")
 
-    # Exit & Stoploss
-    exit_msg = f"Exit Strategy: Exit around {round(entry_price * 1.03, 2)}" if entry_price != "N/A" else "Exit Strategy: N/A"
-    stop_loss = f"{round(entry_price * 0.98, 2)}" if entry_price != "N/A" else "N/A"
-    stoploss_msg = f"Stop-loss Strategy: Stop-loss {stop_loss} rakho."
+    if ema20 != "N/A" and close_price != "N/A" and close_price > ema20:
+        score += 1
+        details.append("Price > EMA20 → Bullish (+1)")
+    else:
+        score -= 1
+        details.append("Price < EMA20 → Bearish (-1)")
 
-    # Verdict
-    try:
-        if trend == "UP" and rsi_val != "N/A" and rsi_val > 55 and macd_val != "N/A" and macd_val > 0 and volume_check:
-            verdict_status = "Bullish"
-            verdict_msg = f"Final Verdict: Stock is {verdict_status}. Strong Buy Setup - RSI {rsi_val}, MACD {macd_val}, SMA crossover confirmed, volume above average."
-        elif trend == "DOWN" and rsi_val != "N/A" and rsi_val < 45 and macd_val != "N/A" and macd_val < 0:
-            verdict_status = "Bearish"
-            verdict_msg = f"Final Verdict: Stock is {verdict_status}. Strong Sell Setup - RSI {rsi_val}, MACD {macd_val}, SMA downtrend confirmed."
-        elif rsi_val != "N/A" and 45 <= rsi_val <= 55:
-            verdict_status = "Neutral"
-            verdict_msg = f"Final Verdict: Stock is {verdict_status}. Wait for Confirmation - RSI {rsi_val} indicates sideways momentum."
+    if rsi_val != "N/A":
+        if rsi_val > 55:
+            score += 1
+            details.append(f"RSI {rsi_val} → Bullish momentum (+1)")
+        elif rsi_val < 45:
+            score -= 1
+            details.append(f"RSI {rsi_val} → Bearish momentum (-1)")
         else:
-            verdict_status = "Mixed"
-            verdict_msg = f"Final Verdict: Signals are mixed. Trade cautiously - need clearer confirmation."
-    except Exception as e:
-        verdict_status = "Error"
-        verdict_msg = f"Final Verdict: Error occurred - {str(e)}"
+            details.append(f"RSI {rsi_val} → Neutral (0)")
 
-    # ✅ OUTSIDE try/except
+    if macd_val != "N/A":
+        if macd_val > 0:
+            score += 1
+            details.append(f"MACD {macd_val} → Positive crossover (+1)")
+        else:
+            score -= 1
+            details.append(f"MACD {macd_val} → Negative crossover (-1)")
+
+    if bb_upper != "N/A" and bb_lower != "N/A" and close_price != "N/A":
+        if close_price < bb_lower:
+            score += 1
+            details.append("Price near lower Bollinger Band → Potential rebound (+1)")
+        elif close_price > bb_upper:
+            score -= 1
+            details.append("Price near upper Bollinger Band → Overbought (-1)")
+
+    if volume_check:
+        score += 1
+        details.append("Volume > 10-day average → Strong participation (+1)")
+
+    # Final verdict
+    if score >= 3:
+        verdict = "Strong Buy"
+    elif score <= -3:
+        verdict = "Strong Sell"
+    elif -2 <= score <= 2:
+        verdict = "Neutral / Wait"
+    else:
+        verdict = "Mixed"
+
     analysis = {
         "ticker": raw_input,
         "Company": ticker,
         "Sector": "N/A",
         "Description": f"{ticker} ka sector data unavailable hai.",
-        "Trend": trend_msg,
-        "Entry": entry_msg,
-        "SuggestedEntry":suggested_entry,
-        "Exit": exit_msg,
-        "StopLoss": stoploss_msg,
-        "Verdict": verdict_msg
+        "Indicators": details,
+        "Score": score,
+        "Verdict": f"Final Verdict: {verdict} (Score {score})",
+        "Entry": f"Suggested Entry Zone: {round(close_price*0.99,2)} – {close_price}" if close_price!="N/A" else "N/A",
+        "Exit": f"Target Exit: {round(close_price*1.03,2)}" if close_price!="N/A" else "N/A",
+        "StopLoss": f"Stop-loss: {round(close_price*0.98,2)}" if close_price!="N/A" else "N/A"
     }
+
     return render_template('index.html', analysis=analysis)
+
+
+# ✅ Render ke liye mandatory block
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
