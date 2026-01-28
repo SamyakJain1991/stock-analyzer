@@ -147,10 +147,4 @@ def analyze():
                 verdict_msg = f"Final Verdict: Signals are mixed. Trade cautiously - need clearer confirmation."
         except Exception as e:
             verdict_status = "Error"
-            verdict_msg = f"Final Verdict: Error occurred - {str(e)}"
-
-        analysis = {
-            "ticker": raw_input,
-            "Company": ticker,
-            "Sector": "N/A",
-            "Description": f"{ticker} ka sector data
+            verdict_msg = f"Final Verdict: Error occurred - {str(e
