@@ -3,7 +3,6 @@ import requests
 import yfinance as yf
 import numpy as np
 from finta import TA
-import os
 
 app = Flask(__name__)
 
@@ -95,13 +94,16 @@ def analyze():
     if not ticker.endswith(".NSE") and not ticker.endswith(".NS") and not ticker.endswith(".BO"):
         ticker = ticker + ".NS"
 
-    try:
-        data = yf.download(ticker, period='6mo', interval='1d')
-    except Exception as e:
-        return render_template('index.html', analysis={'error': f'Yahoo Finance error: {str(e)}'})
-
+    # Universal retry logic
+    data = yf.download(ticker, period='6mo', interval='1d')
     if data.empty:
-        return render_template('index.html', analysis={'error': f'No data found for {ticker}'})
+        alt_ticker = raw_input + ".BO"
+        data = yf.download(alt_ticker, period='6mo', interval='1d')
+    if data.empty:
+        alt_ticker = raw_input
+        data = yf.download(alt_ticker, period='6mo', interval='1d')
+    if data.empty:
+        return render_template('index.html', analysis={'error': f'No data found for {raw_input}'})
     data = data.dropna()
 
     def safe_val(series, default="N/A"):
@@ -182,6 +184,7 @@ def analyze():
     if volume_check:
         score += 1
         details.append("🔊 Volume spike → Strong participation (+1)")
+
 
     # Final verdict + entry zone
     if score >= 3:
