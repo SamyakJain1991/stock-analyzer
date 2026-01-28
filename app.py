@@ -50,14 +50,21 @@ def analyze():
 
         verdict_status = "Bullish" if last_price != "N/A" and prev_close != "N/A" and last_price > prev_close else "Bearish"
 
+        # Entry zone logic for NSE data
+        if verdict_status == "Bullish":
+            entry_zone = f"₹{round(last_price*0.98,2)} – ₹{round(last_price*0.995,2)}"
+        elif verdict_status == "Bearish":
+            entry_zone = f"Sell near ₹{last_price}, target lower levels."
+        else:
+            entry_zone = "Wait for clearer signals before entry."
+
         analysis = {
             "ticker": raw_input,
             "Company": company_name,
             "Sector": sector,
             "Description": f"📌 {company_name} ka sector {sector} hai.",
             "Trend": f"📈 Trend Analysis: Stock abhi {verdict_status} lag raha hai (NSE data ke hisaab se).",
-            "Entry": f"🎯 Entry Strategy: Current price ₹{last_price}.",
-            "SuggestedEntry": f"💡 Suggested Entry Price: ₹{last_price} (basic NSE calculation)",
+            "Entry": f"🎯 Suggested Entry Zone: {entry_zone}",
             "Exit": f"✅ Exit Strategy: Target exit around ₹{round(last_price*1.03,2)}" if last_price!="N/A" else "N/A",
             "StopLoss": f"🛑 Stop-loss Strategy: Stop-loss ₹{round(last_price*0.98,2)}" if last_price!="N/A" else "N/A",
             "Verdict": f"⚖️ Final Verdict: Stock is {verdict_status}. Trade cautiously — NSE data limited."
@@ -157,24 +164,21 @@ def analyze():
         score += 1
         details.append("🔊 Volume spike → Strong participation (+1)")
 
-    # Final verdict
+    # Final verdict + entry zone
     if score >= 3:
-        verdict = "🟢 Strong Buy"
-        verdict_msg = f"All indicators aligned bullish. High-confidence buying opportunity! (Score {score})"
+        verdict_msg = f"🟢 Strong Buy — All indicators aligned bullish. High-confidence buying opportunity! (Score {score})"
         entry_zone = f"₹{round(close_price*0.98,2)} – ₹{round(close_price*0.995,2)}"
     elif score <= -3:
-        verdict = "🔴 Strong Sell"
-        verdict_msg = f"Indicators show bearish momentum. Avoid buying, shorting may be considered. (Score {score})"
+        verdict_msg = f"🔴 Strong Sell — Indicators show bearish momentum. Avoid buying, shorting may be considered. (Score {score})"
         entry_zone = f"Sell near ₹{close_price}, target lower levels."
     elif -2 <= score <= 2:
-        verdict = "⚖️ Neutral"
-        verdict_msg = f"Signals are mixed. Best to wait for confirmation. (Score {score})"
+        verdict_msg = f"⚖️ Neutral — Signals are mixed. Best to wait for confirmation. (Score {score})"
         entry_zone = "Wait for clearer signals before entry."
     else:
-        verdict = "❓ Mixed"
-        verdict_msg = f"Indicators conflict. Trade cautiously. (Score {score})"
+        verdict_msg = f"❓ Mixed — Indicators conflict. Trade cautiously. (Score {score})"
         entry_zone = "No clear entry zone."
 
+  
     analysis = {
         "ticker": raw_input,
         "Company": ticker,
