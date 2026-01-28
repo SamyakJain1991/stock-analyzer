@@ -54,13 +54,13 @@ def analyze():
             "ticker": raw_input,
             "Company": company_name,
             "Sector": sector,
-            "Description": f"{company_name} ka sector {sector} hai.",
-            "Trend": f"Trend Analysis: Stock abhi {verdict_status} lag raha hai (NSE data ke hisaab se).",
-            "Entry": f"Entry Strategy: Current price {last_price}.",
-            "SuggestedEntry": f"Suggested Entry Price: {last_price} (basic NSE calculation)",
-            "Exit": f"Exit Strategy: Target exit around {round(last_price*1.03,2)}" if last_price!="N/A" else "N/A",
-            "StopLoss": f"Stop-loss Strategy: Stop-loss {round(last_price*0.98,2)}" if last_price!="N/A" else "N/A",
-            "Verdict": f"Final Verdict: Stock is {verdict_status}. Trade cautiously — NSE data limited."
+            "Description": f"📌 {company_name} ka sector {sector} hai.",
+            "Trend": f"📈 Trend Analysis: Stock abhi {verdict_status} lag raha hai (NSE data ke hisaab se).",
+            "Entry": f"🎯 Entry Strategy: Current price ₹{last_price}.",
+            "SuggestedEntry": f"💡 Suggested Entry Price: ₹{last_price} (basic NSE calculation)",
+            "Exit": f"✅ Exit Strategy: Target exit around ₹{round(last_price*1.03,2)}" if last_price!="N/A" else "N/A",
+            "StopLoss": f"🛑 Stop-loss Strategy: Stop-loss ₹{round(last_price*0.98,2)}" if last_price!="N/A" else "N/A",
+            "Verdict": f"⚖️ Final Verdict: Stock is {verdict_status}. Trade cautiously — NSE data limited."
         }
         return render_template('index.html', analysis=analysis)
 
@@ -115,69 +115,73 @@ def analyze():
 
     if sma10 != "N/A" and sma30 != "N/A" and sma10 > sma30:
         score += 1
-        details.append("SMA10 > SMA30 → Uptrend (+1)")
+        details.append("📈 Short-term average above long-term → Uptrend (+1)")
     else:
         score -= 1
-        details.append("SMA10 < SMA30 → Downtrend (-1)")
+        details.append("📉 Short-term average below long-term → Downtrend (-1)")
 
     if ema20 != "N/A" and close_price != "N/A" and close_price > ema20:
         score += 1
-        details.append("Price > EMA20 → Bullish (+1)")
+        details.append("📈 Price above EMA20 → Bullish (+1)")
     else:
         score -= 1
-        details.append("Price < EMA20 → Bearish (-1)")
+        details.append("📉 Price below EMA20 → Bearish (-1)")
 
     if rsi_val != "N/A":
         if rsi_val > 55:
             score += 1
-            details.append(f"RSI {rsi_val} → Bullish momentum (+1)")
+            details.append(f"💪 RSI {rsi_val} → Buyers strong (+1)")
         elif rsi_val < 45:
             score -= 1
-            details.append(f"RSI {rsi_val} → Bearish momentum (-1)")
+            details.append(f"😓 RSI {rsi_val} → Sellers strong (-1)")
         else:
-            details.append(f"RSI {rsi_val} → Neutral (0)")
+            details.append(f"⚖️ RSI {rsi_val} → Neutral (0)")
 
     if macd_val != "N/A":
         if macd_val > 0:
             score += 1
-            details.append(f"MACD {macd_val} → Positive crossover (+1)")
+            details.append(f"📊 MACD {macd_val} → Positive crossover (+1)")
         else:
             score -= 1
-            details.append(f"MACD {macd_val} → Negative crossover (-1)")
+            details.append(f"📊 MACD {macd_val} → Negative crossover (-1)")
 
     if bb_upper != "N/A" and bb_lower != "N/A" and close_price != "N/A":
         if close_price < bb_lower:
             score += 1
-            details.append("Price near lower Bollinger Band → Potential rebound (+1)")
+            details.append("📉 Price near lower Bollinger Band → Possible rebound (+1)")
         elif close_price > bb_upper:
             score -= 1
-            details.append("Price near upper Bollinger Band → Overbought (-1)")
+            details.append("📈 Price near upper Bollinger Band → Overbought (-1)")
 
     if volume_check:
         score += 1
-        details.append("Volume > 10-day average → Strong participation (+1)")
+        details.append("🔊 Volume spike → Strong participation (+1)")
 
     # Final verdict
     if score >= 3:
-        verdict = "Strong Buy"
+        verdict = "🟢 Strong Buy"
+        verdict_msg = f"All indicators aligned bullish. High-confidence buying opportunity! (Score {score})"
     elif score <= -3:
-        verdict = "Strong Sell"
+        verdict = "🔴 Strong Sell"
+        verdict_msg = f"Indicators show bearish momentum. Avoid buying, shorting may be considered. (Score {score})"
     elif -2 <= score <= 2:
-        verdict = "Neutral / Wait"
+        verdict = "⚖️ Neutral"
+        verdict_msg = f"Signals are mixed. Best to wait for confirmation. (Score {score})"
     else:
-        verdict = "Mixed"
+        verdict = "❓ Mixed"
+        verdict_msg = f"Indicators conflict. Trade cautiously. (Score {score})"
 
     analysis = {
         "ticker": raw_input,
         "Company": ticker,
         "Sector": "N/A",
-        "Description": f"{ticker} ka sector data unavailable hai.",
+        "Description": f"📌 {ticker} ka sector data unavailable hai.",
         "Indicators": details,
         "Score": score,
-        "Verdict": f"Final Verdict: {verdict} (Score {score})",
-        "Entry": f"Suggested Entry Zone: {round(close_price*0.99,2)} – {close_price}" if close_price!="N/A" else "N/A",
-        "Exit": f"Target Exit: {round(close_price*1.03,2)}" if close_price!="N/A" else "N/A",
-        "StopLoss": f"Stop-loss: {round(close_price*0.98,2)}" if close_price!="N/A" else "N/A"
+        "Verdict": verdict_msg,
+        "Entry": f"🎯 Suggested Entry Zone: ₹{round(close_price*0.99,2)} – ₹{close_price}" if close_price!="N/A" else "N/A",
+        "Exit": f"✅ Target Exit: ₹{round(close_price*1.03,2)}" if close_price!="N/A" else "N/A",
+        "StopLoss": f"🛑 Stop-loss: ₹{round(close_price*0.98,2)}" if close_price!="N/A" else "N/A"
     }
 
     return render_template('index.html', analysis=analysis)
