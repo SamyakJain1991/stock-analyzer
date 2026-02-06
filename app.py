@@ -4,7 +4,6 @@ import yfinance as yf
 import numpy as np
 import pandas as pd
 from finta import TA
-import os
 from io import StringIO
 
 app = Flask(__name__)
@@ -38,7 +37,7 @@ def fetch_nse_data(symbol):
     except Exception:
         return None
 
-# --- NSE stock list for dropdown ---
+# --- NSE stock list preload ---
 def get_nse_stock_list():
     url = "https://www.nseindia.com/content/equities/EQUITY_L.csv"
     headers = {
@@ -54,10 +53,10 @@ def get_nse_stock_list():
             df = pd.read_csv(StringIO(resp.text))
             return df['SYMBOL'].dropna().tolist()
         else:
-            return ["SBIN", "TCS", "INFY", "RELIANCE", "HDFCBANK"]
+            return ["SBIN","TCS","INFY","RELIANCE","HDFCBANK"]
     except Exception as e:
         print("Error fetching NSE list:", e)
-        return ["SBIN", "TCS", "INFY", "RELIANCE", "HDFCBANK"]
+        return ["SBIN","TCS","INFY","RELIANCE","HDFCBANK"]
 
 STOCK_LIST = get_nse_stock_list()
 
@@ -65,74 +64,71 @@ STOCK_LIST = get_nse_stock_list()
 def home():
     return render_template('index.html', analysis=None, stock_list=STOCK_LIST)
 
-@app.route('/analyze', methods=["GET", "POST"])
+@app.route('/analyze', methods=["GET","POST"])
 def analyze():
     raw_input = request.args.get('ticker') or request.form.get('ticker') or request.form.get('search') or "RELIANCE"
     raw_input = sanitize_ticker(raw_input)
 
-    # --- NSE API first ---
-    nse_data = fetch_nse_data(raw_input)
-    if nse_data:
-        info = nse_data.get("info", {})
-        company_name = info.get("companyName", raw_input)
-        sector = info.get("industry", "N/A")
-        prices = nse_data.get("priceInfo", {})
-        last_price = prices.get("lastPrice", "N/A")
-        prev_close = prices.get("previousClose", "N/A")
+    # --- If symbol exists in NSE list, try NSE API ---
+    if raw_input in STOCK_LIST:
+        nse_data = fetch_nse_data(raw_input)
+        if nse_data:
+            info = nse_data.get("info", {})
+            company_name = info.get("companyName", raw_input)
+            sector = info.get("industry", "N/A")
+            prices = nse_data.get("priceInfo", {})
+            last_price = prices.get("lastPrice", "N/A")
+            prev_close = prices.get("previousClose", "N/A")
 
-        score = 0
-        if last_price != "N/A" and prev_close != "N/A":
-            if last_price > prev_close:
-                score += 1
-            elif last_price < prev_close:
-                score -= 1
+            score = 0
+            if last_price != "N/A" and prev_close != "N/A":
+                if last_price > prev_close:
+                    score += 1
+                elif last_price < prev_close:
+                    score -= 1
 
-        verdict_msg = f"⚖️ Neutral — No clear momentum. (Score {score})"
-        entry_zone = "Wait for clearer signals."
-        stop_loss = "N/A"
+            verdict_msg = f"⚖️ Neutral — No clear momentum. (Score {score})"
+            entry_zone = "Wait for clearer signals."
+            stop_loss = "N/A"
 
-        if score >= 3:
-            verdict_msg = f"🟢 Strong Buy — Multiple bullish signals. (Score {score})"
-            entry_zone = f"₹{round(last_price*0.97,2)} – ₹{round(last_price*0.99,2)}"
-            stop_loss = f"₹{round(last_price*0.95,2)}"
-        elif score in [1,2]:
-            verdict_msg = f"⚠️ Cautious Buy — Mild bullish momentum. (Score {score})"
-            entry_zone = f"₹{round(last_price*0.97,2)} – ₹{round(last_price*0.99,2)}"
-            stop_loss = f"₹{round(last_price*0.95,2)}"
-        elif score <= -3:
-            verdict_msg = f"🔴 Strong Sell — Multiple bearish signals. (Score {score})"
-            entry_zone = f"Sell near ₹{last_price}"
-            stop_loss = f"₹{round(last_price*1.02,2)}"
-        elif score in [-1,-2]:
-            verdict_msg = f"⚠️ Cautious Sell — Mild bearish momentum. (Score {score})"
-            entry_zone = f"Sell near ₹{last_price}"
-            stop_loss = f"₹{round(last_price*1.02,2)}"
+            if score >= 3:
+                verdict_msg = f"🟢 Strong Buy — Multiple bullish signals. (Score {score})"
+                entry_zone = f"₹{round(last_price*0.97,2)} – ₹{round(last_price*0.99,2)}"
+                stop_loss = f"₹{round(last_price*0.95,2)}"
+            elif score in [1,2]:
+                verdict_msg = f"⚠️ Cautious Buy — Mild bullish momentum. (Score {score})"
+                entry_zone = f"₹{round(last_price*0.97,2)} – ₹{round(last_price*0.99,2)}"
+                stop_loss = f"₹{round(last_price*0.95,2)}"
+            elif score <= -3:
+                verdict_msg = f"🔴 Strong Sell — Multiple bearish signals. (Score {score})"
+                entry_zone = f"Sell near ₹{last_price}"
+                stop_loss = f"₹{round(last_price*1.02,2)}"
+            elif score in [-1,-2]:
+                verdict_msg = f"⚠️ Cautious Sell — Mild bearish momentum. (Score {score})"
+                entry_zone = f"Sell near ₹{last_price}"
+                stop_loss = f"₹{round(last_price*1.02,2)}"
 
-        analysis = {
-            "ticker": raw_input,
-            "Company": company_name,
-            "Sector": sector,
-            "Description": f"📌 {company_name} ka sector {sector} hai.",
-            "Trend": f"📈 Trend Analysis: {verdict_msg}",
-            "Entry": f"🎯 Suggested Entry Zone: {entry_zone}",
-            "Exit": f"✅ Exit Strategy: Target exit around ₹{round(last_price*1.03,2)}" if last_price!="N/A" else "N/A",
-            "StopLoss": f"🛑 Stop-loss Strategy: {stop_loss}",
-            "Verdict": verdict_msg
-        }
-        return render_template('index.html', analysis=analysis, stock_list=STOCK_LIST)
+            analysis = {
+                "ticker": raw_input,
+                "Company": company_name,
+                "Sector": sector,
+                "Description": f"📌 {company_name} ka sector {sector} hai.",
+                "Trend": f"📈 Trend Analysis: {verdict_msg}",
+                "Entry": f"🎯 Suggested Entry Zone: {entry_zone}",
+                "Exit": f"✅ Exit Strategy: Target exit around ₹{round(last_price*1.03,2)}" if last_price!="N/A" else "N/A",
+                "StopLoss": f"🛑 Stop-loss Strategy: {stop_loss}",
+                "Verdict": verdict_msg
+            }
+            return render_template('index.html', analysis=analysis, stock_list=STOCK_LIST)
 
-    # --- Yahoo Finance fallback ---
-    ticker = raw_input
-    if not ticker.endswith(".NSE") and not ticker.endswith(".NS") and not ticker.endswith(".BO"):
-        ticker = ticker + ".NS"
-
+    # --- Yahoo fallback if NSE fails ---
+    ticker = raw_input + ".NS"
     data = yf.download(ticker, period='6mo', interval='1d')
     if data.empty:
-        alt_ticker = raw_input + ".BO"
-        data = yf.download(alt_ticker, period='6mo', interval='1d')
+        ticker = raw_input + ".BO"
+        data = yf.download(ticker, period='6mo', interval='1d')
     if data.empty:
-        alt_ticker = raw_input
-        data = yf.download(alt_ticker, period='6mo', interval='1d')
+        data = yf.download(raw_input, period='6mo', interval='1d')
     if data.empty:
         return render_template('index.html', analysis={'error': f'No data found for {raw_input}'}, stock_list=STOCK_LIST)
     data = data.dropna()
