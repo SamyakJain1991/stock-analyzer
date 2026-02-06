@@ -1,11 +1,11 @@
 from flask import Flask, request, render_template
-import os
 import requests
 import yfinance as yf
 import numpy as np
 import pandas as pd
 from finta import TA
 from io import StringIO
+import os
 
 app = Flask(__name__)
 
@@ -54,6 +54,7 @@ def get_nse_stock_list():
             df = pd.read_csv(StringIO(resp.text))
             return df['SYMBOL'].dropna().tolist()
         else:
+            print("NSE list fetch failed, status:", resp.status_code)
             return ["SBIN","TCS","INFY","RELIANCE","HDFCBANK"]
     except Exception as e:
         print("Error fetching NSE list:", e)
@@ -191,7 +192,7 @@ def analyze():
             score -= 1
             details.append(f"😓 RSI {rsi_val} bearish (-1)")
 
- 
+   
     if macd_val != "N/A":
         if macd_val > 0:
             score += 1
