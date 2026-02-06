@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 from finta import TA
 import os
+from io import StringIO
 
 app = Flask(__name__)
 
@@ -22,7 +23,7 @@ def sanitize_ticker(raw_input):
 def fetch_nse_data(symbol):
     url = f"https://www.nseindia.com/api/quote-equity?symbol={symbol}"
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+        "User-Agent": "Mozilla/5.0",
         "Accept": "application/json",
         "Referer": "https://www.nseindia.com/"
     }
@@ -39,10 +40,21 @@ def fetch_nse_data(symbol):
 
 # --- NSE stock list for dropdown ---
 def get_nse_stock_list():
+    url = "https://www.nseindia.com/content/equities/EQUITY_L.csv"
+    headers = {
+        "User-Agent": "Mozilla/5.0",
+        "Accept": "text/csv",
+        "Referer": "https://www.nseindia.com/"
+    }
     try:
-        url = "https://www.nseindia.com/content/equities/EQUITY_L.csv"
-        df = pd.read_csv(url)
-        return df['SYMBOL'].dropna().tolist()
+        session = requests.Session()
+        session.get("https://www.nseindia.com", headers=headers, timeout=10)
+        resp = session.get(url, headers=headers, timeout=10)
+        if resp.status_code == 200:
+            df = pd.read_csv(StringIO(resp.text))
+            return df['SYMBOL'].dropna().tolist()
+        else:
+            return ["SBIN", "TCS", "INFY", "RELIANCE", "HDFCBANK"]
     except Exception as e:
         print("Error fetching NSE list:", e)
         return ["SBIN", "TCS", "INFY", "RELIANCE", "HDFCBANK"]
@@ -75,7 +87,10 @@ def analyze():
             elif last_price < prev_close:
                 score -= 1
 
-        # Verdict logic
+        verdict_msg = f"⚖️ Neutral — No clear momentum. (Score {score})"
+        entry_zone = "Wait for clearer signals."
+        stop_loss = "N/A"
+
         if score >= 3:
             verdict_msg = f"🟢 Strong Buy — Multiple bullish signals. (Score {score})"
             entry_zone = f"₹{round(last_price*0.97,2)} – ₹{round(last_price*0.99,2)}"
@@ -92,10 +107,6 @@ def analyze():
             verdict_msg = f"⚠️ Cautious Sell — Mild bearish momentum. (Score {score})"
             entry_zone = f"Sell near ₹{last_price}"
             stop_loss = f"₹{round(last_price*1.02,2)}"
-        else:
-            verdict_msg = f"⚖️ Neutral — No clear momentum. (Score {score})"
-            entry_zone = "Wait for clearer signals."
-            stop_loss = "N/A"
 
         analysis = {
             "ticker": raw_input,
@@ -183,6 +194,7 @@ def analyze():
             score -= 1
             details.append(f"😓 RSI {rsi_val} bearish (-1)")
 
+ 
     if macd_val != "N/A":
         if macd_val > 0:
             score += 1
