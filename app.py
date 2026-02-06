@@ -38,26 +38,13 @@ def fetch_nse_data(symbol):
     except Exception:
         return None
 
-# --- NSE stock list preload ---
+# --- NSE stock list preload (local CSV) ---
 def get_nse_stock_list():
-    url = "https://www.nseindia.com/content/equities/EQUITY_L.csv"
-    headers = {
-        "User-Agent": "Mozilla/5.0",
-        "Accept": "text/csv",
-        "Referer": "https://www.nseindia.com/"
-    }
     try:
-        session = requests.Session()
-        session.get("https://www.nseindia.com", headers=headers, timeout=10)
-        resp = session.get(url, headers=headers, timeout=10)
-        if resp.status_code == 200:
-            df = pd.read_csv(StringIO(resp.text))
-            return df['SYMBOL'].dropna().tolist()
-        else:
-            print("NSE list fetch failed, status:", resp.status_code)
-            return ["SBIN","TCS","INFY","RELIANCE","HDFCBANK"]
+        df = pd.read_csv("EQUITY_L.csv")   # local file in project folder
+        return df['SYMBOL'].dropna().tolist()
     except Exception as e:
-        print("Error fetching NSE list:", e)
+        print("Local CSV load failed:", e)
         return ["SBIN","TCS","INFY","RELIANCE","HDFCBANK"]
 
 STOCK_LIST = get_nse_stock_list()
@@ -192,27 +179,26 @@ def analyze():
             score -= 1
             details.append(f"😓 RSI {rsi_val} bearish (-1)")
 
-   
-    if macd_val != "N/A":
-        if macd_val > 0:
-            score += 1
-            details.append(f"📊 MACD {macd_val} positive (+1)")
-        else:
-            score -= 1
-            details.append(f"📊 MACD {macd_val} negative (-1)")
+    if macd_val != "N/A" and macd_val > 0:
+        score += 1
+        details.append("📈 MACD bullish (+1)")
+    elif macd_val != "N/A":
+        score -= 1
+        details.append("📉 MACD bearish (-1)")
 
-   
-    if bb_upper != "N/A" and bb_lower != "N/A" and close_price != "N/A":
-        if close_price < bb_lower:
-            score += 1
-            details.append("📉 Near lower Bollinger Band rebound (+1)")
-        elif close_price > bb_upper:
+    if close_price != "N/A" and bb_upper != "N/A" and bb_lower != "N/A":
+        if close_price > bb_upper:
             score -= 1
-            details.append("📈 Near upper Bollinger Band overbought (-1)")
+            details.append("📉 Price above Bollinger upper band (overbought)")
+        elif close_price < bb_lower:
+            score += 1
+            details.append("📈 Price below Bollinger lower band (oversold)")
 
     if volume_check:
         score += 1
-        details.append("🔊 Volume spike (+1)")
+        details.append("📊 Volume spike (+1)")
+
+  
  
 # Final verdict + entry zone
     if score >= 3:
