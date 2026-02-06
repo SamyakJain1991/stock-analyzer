@@ -7,6 +7,7 @@
         body { font-family: Arial, sans-serif; margin: 20px; background: #f9f9f9; }
         h1 { color: #333; }
         .card { background: #fff; padding: 20px; margin-top: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .alert { background:#fff3cd; border:1px solid #ffeeba; color:#856404; padding:15px; border-radius:8px; margin-bottom:20px; }
         .error { color: red; font-weight: bold; }
         select, input[type="text"], button {
             padding: 8px; margin: 5px; border-radius: 4px; border: 1px solid #ccc;
@@ -22,6 +23,13 @@
 </head>
 <body>
     <h1>📊 Stock Analyzer</h1>
+
+    <!-- Professional Disclaimer -->
+    <div class="alert">
+        ⚠️ <strong>Disclaimer:</strong> The information and analysis provided on this platform are for educational and informational purposes only. 
+        They do not constitute investment advice, financial guidance, or recommendations to buy or sell securities. 
+        Users should conduct their own research or consult a qualified financial advisor before making any investment decisions.
+    </div>
 
     <form method="POST" action="/analyze" onsubmit="clearDropdownOnSearch()">
         <!-- Dropdown -->
