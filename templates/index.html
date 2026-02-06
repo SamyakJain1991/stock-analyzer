@@ -2,106 +2,150 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Stock Analyzer</title>
+    <title>NSE Stock Analyzer</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background: #f4f6f9;
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #f4f6f8;
             margin: 0;
-            padding: 20px;
+            padding: 0;
+        }
+        .warning {
+            background-color: #ffe6e6;
+            color: #b30000;
+            padding: 12px;
+            border: 1px solid #b30000;
+            font-weight: bold;
+            text-align: center;
+        }
+        .container {
+            max-width: 700px;
+            margin: 20px auto 80px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
         h1 {
             text-align: center;
-            color: #333;
+            color: #2c3e50;
         }
         form {
-            text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
-        input[type="text"] {
+        select, input[type="text"], button {
             padding: 10px;
-            width: 250px;
+            font-size: 16px;
             border-radius: 5px;
             border: 1px solid #ccc;
         }
         button {
-            padding: 10px 20px;
-            margin-left: 10px;
-            border: none;
-            border-radius: 5px;
-            background: #007bff;
+            background-color: #2c3e50;
             color: white;
             cursor: pointer;
         }
         button:hover {
-            background: #0056b3;
+            background-color: #34495e;
         }
-        .card {
-            background: white;
-            border-radius: 8px;
-            padding: 15px;
-            margin: 15px auto;
-            max-width: 600px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        .section {
+            margin-bottom: 20px;
         }
-        .verdict {
-            font-weight: bold;
-            font-size: 1.2em;
+        .section h2 {
+            margin-bottom: 10px;
+            color: #34495e;
         }
-        .bullish { background-color: #d4edda; }
-        .bearish { background-color: #f8d7da; }
-        .neutral { background-color: #fff3cd; }
         ul {
             padding-left: 20px;
+        }
+        .highlight {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .footer-disclaimer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background-color: #ffe6e6;
+            color: #b30000;
+            text-align: center;
+            padding: 10px;
+            font-size: 14px;
+            border-top: 1px solid #b30000;
         }
     </style>
 </head>
 <body>
-    <h1>🔍 Stock Analyzer</h1>
-    <form action="/analyze" method="get">
-        <input type="text" name="ticker" placeholder="Enter Stock Ticker (e.g. RELIANCE)">
-        <button type="submit">Analyze</button>
-    </form>
+    <!-- Top Warning Banner -->
+    <div class="warning">
+        ⚠️ Disclaimer: Ye tool SEBI registered advisory nahi hai. 
+        Analysis sirf probability aur indicators par based hai, 
+        market me koi surety nahi hoti. Invest/Trade apne risk par karein.
+    </div>
 
-    {% if analysis %}
-        <div class="card">
-            <h2>📌 Company Info</h2>
-            <p><strong>{{ analysis['Company'] }}</strong></p>
-            <p>Sector: {{ analysis['Sector'] }}</p>
-            <p>{{ analysis['Description'] }}</p>
-        </div>
+    <div class="container">
+        <h1>📊 NSE Stock Analyzer</h1>
 
-        <div class="card">
-            <h2>📈 Trend</h2>
-            <p>{{ analysis['Trend'] }}</p>
-        </div>
-
-        <div class="card">
-            <h2>📊 Indicators</h2>
-            <ul>
-                {% for detail in analysis['Indicators'] %}
-                    <li>{{ detail }}</li>
+        <form method="POST" action="/analyze">
+            <label for="ticker">Select a stock:</label>
+            <select name="ticker" id="ticker">
+                <option value="">--Choose--</option>
+                {% for stock in stock_list %}
+                    <option value="{{ stock }}" {% if analysis and analysis['ticker']==stock %}selected{% endif %}>{{ stock }}</option>
                 {% endfor %}
-            </ul>
-        </div>
+            </select>
 
-        <div class="card">
-            <h2>🎯 Entry Strategy</h2>
-            <p>{{ analysis['Entry'] }}</p>
-            <p>{{ analysis['SuggestedEntry'] }}</p>
-        </div>
+            <label for="search">Or search manually:</label>
+            <input type="text" name="search" id="search" placeholder="Enter ticker (e.g. SBIN)" />
 
-        <div class="card">
-            <h2>✅ Exit & Stoploss</h2>
-            <p>{{ analysis['Exit'] }}</p>
-            <p>{{ analysis['StopLoss'] }}</p>
-        </div>
+            <button type="submit">Analyze</button>
+        </form>
 
-        <div class="card verdict 
-            {% if 'Buy' in analysis['Verdict'] %}bullish{% elif 'Sell' in analysis['Verdict'] %}bearish{% else %}neutral{% endif %}">
-            <h2>⚖️ Final Verdict</h2>
-            <p>{{ analysis['Verdict'] }}</p>
-        </div>
-    {% endif %}
+        {% if analysis %}
+            <div class="section">
+                <h2>📌 Company Info</h2>
+                <p class="highlight">{{ analysis['Company'] }}</p>
+                <p>Sector: {{ analysis['Sector'] }}</p>
+                <p>{{ analysis['Description'] }}</p>
+            </div>
+
+            <div class="section">
+                <h2>📈 Trend</h2>
+                <p>{{ analysis['Trend'] }}</p>
+            </div>
+
+            {% if analysis['Indicators'] %}
+            <div class="section">
+                <h2>📊 Indicators</h2>
+                <ul>
+                    {% for indicator in analysis['Indicators'] %}
+                        <li>{{ indicator }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            <div class="section">
+                <h2>🎯 Entry & Exit Strategy</h2>
+                <p>{{ analysis['Entry'] }}</p>
+                <p>{{ analysis['Exit'] }}</p>
+                <p>{{ analysis['StopLoss'] }}</p>
+            </div>
+
+            <div class="section">
+                <h2>🧠 Verdict</h2>
+                <p>{{ analysis['Verdict'] }}</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Footer Disclaimer -->
+    <div class="footer-disclaimer">
+        ⚠️ Disclaimer: Ye SEBI registered advisory nahi hai. 
+        Sirf probability based analysis hai, market me surety nahi hoti. 
+        Invest/Trade apne risk par karein.
+    </div>
 </body>
 </html>
