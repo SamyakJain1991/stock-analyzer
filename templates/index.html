@@ -33,9 +33,16 @@
             {% endfor %}
         </select>
 
-        <!-- Search box -->
+        <!-- Search box with autocomplete -->
         <label for="searchBox">Or Search:</label>
-        <input type="text" id="searchBox" name="search" placeholder="Enter stock symbol...">
+        <input type="text" id="searchBox" name="search" placeholder="Enter stock symbol..." list="stockSuggestions">
+
+        <!-- Datalist for autocomplete -->
+        <datalist id="stockSuggestions">
+            {% for stock in stock_list %}
+                <option value="{{ stock }}">
+            {% endfor %}
+        </datalist>
 
         <button type="submit">Analyze</button>
     </form>
