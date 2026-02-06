@@ -79,23 +79,32 @@ def analyze():
             verdict_msg = f"⚖️ Neutral — No clear momentum. (Score {score})"
             entry_zone = "Wait for clearer signals."
             stop_loss = "N/A"
-
+            
             if score >= 3:
                 verdict_msg = f"🟢 Strong Buy — Multiple bullish signals. (Score {score})"
-                entry_zone = f"₹{round(last_price*0.97,2)} – ₹{round(last_price*0.99,2)}"
+                entry_zone = f"Buy near ₹{round(last_price*0.97,2)} – ₹{round(last_price*0.99,2)}"
                 stop_loss = f"₹{round(last_price*0.95,2)}"
+
             elif score in [1,2]:
                 verdict_msg = f"⚠️ Cautious Buy — Mild bullish momentum. (Score {score})"
-                entry_zone = f"₹{round(last_price*0.97,2)} – ₹{round(last_price*0.99,2)}"
+                entry_zone = f"Buy near ₹{round(last_price*0.97,2)} – ₹{round(last_price*0.99,2)}"
                 stop_loss = f"₹{round(last_price*0.95,2)}"
+
             elif score <= -3:
-                verdict_msg = f"🔴 Strong Sell — Multiple bearish signals. (Score {score})"
-                entry_zone = f"Sell near ₹{last_price}"
+                verdict_msg = f"🔴 Strong Bearish — Multiple bearish signals. (Score {score})"
+                entry_zone = f"Short near ₹{last_price}"
                 stop_loss = f"₹{round(last_price*1.02,2)}"
+
             elif score in [-1,-2]:
-                verdict_msg = f"⚠️ Cautious Sell — Mild bearish momentum. (Score {score})"
-                entry_zone = f"Sell near ₹{last_price}"
+                verdict_msg = f"⚠️ Cautious Bearish — Mild bearish momentum. (Score {score})"
+                entry_zone = f"Short near ₹{last_price}"
                 stop_loss = f"₹{round(last_price*1.02,2)}"
+
+            else:
+                verdict_msg = f"⚖️ Neutral — No clear momentum. (Score {score})"
+                entry_zone = "Wait for clearer signals."
+                stop_loss = "N/A"
+         
 
             analysis = {
                 "ticker": raw_input,
