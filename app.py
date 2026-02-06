@@ -89,16 +89,24 @@ def analyze():
                 verdict_msg = f"⚠️ Cautious Buy — Mild bullish momentum. (Score {score})"
                 entry_zone = f"Buy near ₹{round(last_price*0.97,2)} – ₹{round(last_price*0.99,2)}"
                 stop_loss = f"₹{round(last_price*0.95,2)}"
+            elif score <= -3 or score in [-1,-2]:
+                # Bearish case with support-based reversal strategy
+                monthly_low_prev = data['Low'].resample('M').min().iloc[-2]
+                monthly_low_curr = data['Low'].resample('M').min().iloc[-1]
+                support_level = monthly_low_curr if monthly_low_curr < monthly_low_prev else monthly_low_prev
 
-            elif score <= -3:
-                verdict_msg = f"🔴 Strong Bearish — Multiple bearish signals. (Score {score})"
-                entry_zone = f"Short near ₹{last_price}"
-                stop_loss = f"₹{round(last_price*1.02,2)}"
+                if score <= -3:
+                    verdict_msg = f"🔴 Strong Bearish — Multiple bearish signals. (Score {score})"
+                else:
+                    verdict_msg = f"⚠️ Cautious Bearish — Mild bearish momentum. (Score {score})"
 
-            elif score in [-1,-2]:
-                verdict_msg = f"⚠️ Cautious Bearish — Mild bearish momentum. (Score {score})"
-                entry_zone = f"Short near ₹{last_price}"
-                stop_loss = f"₹{round(last_price*1.02,2)}"
+                entry_zone = (
+                    f"📉 Previous Month Low: ₹{round(monthly_low_prev,2)} | "
+                    f"📉 Current Month Low: ₹{round(monthly_low_curr,2)} | "
+                    f"🎯 Support identified near ₹{round(support_level,2)}"
+                )
+                stop_loss = "Strategy: Wait for reversal above support before considering buy; avoid entry if price breaks below support."
+
 
             else:
                 verdict_msg = f"⚖️ Neutral — No clear momentum. (Score {score})"
