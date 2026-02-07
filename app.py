@@ -75,24 +75,42 @@ def analyze():
                 elif last_price < prev_close:
                     score -= 1
 
-            # Verdict logic (NSE block)
+            verdict_msg = f"⚖️ Neutral — No clear momentum. (Score {score})"
+            entry_zone = "Wait for clearer signals."
+            stop_loss = "N/A"
+            
             if score >= 3:
                 verdict_msg = f"🟢 Strong Buy — Multiple bullish signals. (Score {score})"
                 entry_zone = f"Buy near ₹{round(last_price*0.97,2)} – ₹{round(last_price*0.99,2)}"
                 stop_loss = f"₹{round(last_price*0.95,2)}"
+
             elif score in [1,2]:
                 verdict_msg = f"⚠️ Cautious Buy — Mild bullish momentum. (Score {score})"
                 entry_zone = f"Buy near ₹{round(last_price*0.97,2)} – ₹{round(last_price*0.99,2)}"
                 stop_loss = f"₹{round(last_price*0.95,2)}"
-            elif score <= -1:
-                verdict_msg = f"⚠️ Bearish — Price weaker than previous close. (Score {score})"
-                entry_zone = "Watch for reversal before entry."
-                stop_loss = "Avoid entry if price keeps falling."
+            elif score <= -3 or score in [-1,-2]:
+                # Bearish case with support-based reversal strategy
+                monthly_low_prev = data['Low'].resample('M').min().iloc[-2]
+                monthly_low_curr = data['Low'].resample('M').min().iloc[-1]
+                support_level = monthly_low_curr if monthly_low_curr < monthly_low_prev else monthly_low_prev
+
+                if score <= -3:
+                    verdict_msg = f"🔴 Strong Bearish — Multiple bearish signals. (Score {score})"
+                else:
+                    verdict_msg = f"⚠️ Cautious Bearish — Mild bearish momentum. (Score {score})"
+
+                entry_zone = (
+                    f"📉 Previous Month Low: ₹{round(monthly_low_prev,2)} | "
+                    f"📉 Current Month Low: ₹{round(monthly_low_curr,2)} | "
+                    f"🎯 Support identified near ₹{round(support_level,2)}"
+                )
+                stop_loss = "Strategy: Wait for reversal above support before considering buy; avoid entry if price breaks below support."
+
             else:
                 verdict_msg = f"⚖️ Neutral — No clear momentum. (Score {score})"
                 entry_zone = "Wait for clearer signals."
                 stop_loss = "N/A"
-
+         
             analysis = {
                 "ticker": raw_input,
                 "Company": company_name,
@@ -100,7 +118,7 @@ def analyze():
                 "Description": f"📌 {company_name} ka sector {sector} hai.",
                 "Trend": f"📈 Trend Analysis: {verdict_msg}",
                 "Entry": f"🎯 Suggested Entry Zone: {entry_zone}",
-                "Exit": f"✅ Target Exit: ₹{round(last_price*1.03,2)}" if last_price!="N/A" else "N/A",
+                "Exit": f"✅ Exit Strategy: Target exit around ₹{round(last_price*1.03,2)}" if last_price!="N/A" else "N/A",
                 "StopLoss": f"🛑 Stop-loss Strategy: {stop_loss}",
                 "Verdict": verdict_msg
             }
@@ -148,14 +166,6 @@ def analyze():
     bb_upper = safe_val(data['BB_upper'])
     bb_lower = safe_val(data['BB_lower'])
     volume_check = data['Volume'].iloc[-1] > data['Volume'].tail(10).mean()
-
-    # Monthly lows for support
-    monthly_lows = data['Low'].resample('M').min()
-    support_level = None
-    if len(monthly_lows) >= 2:
-        monthly_low_prev = monthly_lows.iloc[-2]
-        monthly_low_curr = monthly_lows.iloc[-1]
-        support_level = monthly_low_curr if monthly_low_curr < monthly_low_prev else monthly_low_prev
 
     # Scoring
     score = 0
