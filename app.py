@@ -244,6 +244,6 @@ def analyze():
     return render_template('index.html', analysis=analysis)
 
 # ✅ Render ke liye mandatory block
-    if __name__ == "__main__":
-        port = int(os.  environ.get("PORT", 5000))
-        app.run(host="0.0.0.0", port=port)
+if __name__ == "__main__":
+    port = int(os.  environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
