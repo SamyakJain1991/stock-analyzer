@@ -54,8 +54,21 @@ def home():
 # ✅ Naya route yahan add karo
 @app.route('/live_price', methods=["GET"])
 def live_price():
-    # code as above
+    raw_input = request.args.get('ticker') or "RELIANCE"
+    raw_input = sanitize_ticker(raw_input)
 
+    ticker = yf.Ticker(raw_input + ".NS")
+    info = ticker.history(period="1d", interval="1m")
+
+    if info.empty:
+        return {"error": f"No live data found for {raw_input}"}
+
+    current_price = round(info['Close'].iloc[-1], 2)
+
+    return {
+        "ticker": raw_input,
+        "current_price": f"₹{current_price}"
+    }
 
 @app.route('/analyze', methods=["GET","POST"])
 def analyze():
