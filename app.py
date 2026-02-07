@@ -86,16 +86,6 @@ def analyze():
             last_price = prices.get("lastPrice", "N/A")
             prev_close = prices.get("previousClose", "N/A")
             current_price = last_price
-# ✅ Fetch volume from Yahoo Finance for consistency
-            yf_data = yf.download(raw_input + ".NS", period="1d", interval="1m")
-            if not yf_data.empty:	
-                latest_volume = int(yf_data['Volume'].iloc[-1])
-                avg_volume = int(yf_data['Volume'].tail(20).mean())
-                volume_status = f"Latest: {latest_volume}, Avg(20d): {avg_volume}"
-            else:
-                volume_status = "Volume data not available"
-                 
-
             score = 0
             if last_price != "N/A" and prev_close != "N/A":
                 if last_price > prev_close:
@@ -126,7 +116,6 @@ def analyze():
                 "Sector": sector,
                 "Description": f"📌 {company_name} ka sector {sector} hai.",
                 "CurrentPrice": f"💰 Current Price: ₹{current_price}",
-                "Volume": volume_status,
                 "Trend": f"{verdict_msg} | Confidence: {confidence}",
                 "Entry": "🎯 Suggested Entry Zone: Wait for clearer signals.",
                 "Exit": f"✅ Exit Strategy: Target exit around ₹{round(last_price*1.03,2)}" if last_price!="N/A" else "N/A",
