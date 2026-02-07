@@ -88,7 +88,7 @@ def analyze():
             current_price = last_price
 # ✅ Fetch volume from Yahoo Finance for consistency
             yf_data = yf.download(raw_input + ".NS", period="1d", interval="1m")
-            if not yf_data.empty:
+            if not yf_data.empty:	
                 latest_volume = int(yf_data['Volume'].iloc[-1])
                 avg_volume = int(yf_data['Volume'].tail(20).mean())
                 volume_status = f"Latest: {latest_volume}, Avg(20d): {avg_volume}"
