@@ -85,6 +85,8 @@ def analyze():
             prices = nse_data.get("priceInfo", {})
             last_price = prices.get("lastPrice", "N/A")
             prev_close = prices.get("previousClose", "N/A")
+            current_price = last_price
+
 
             score = 0
             if last_price != "N/A" and prev_close != "N/A":
@@ -115,7 +117,7 @@ def analyze():
                 "Company": company_name,
                 "Sector": sector,
                 "Description": f"📌 {company_name} ka sector {sector} hai.",
-                "CurrentPrice": f"💰 Current Price: ₹{close_price}" ,
+                "CurrentPrice": f"💰 Current Price: ₹{current_price}",
                 "Trend": f"{verdict_msg} | Confidence: {confidence}",
                 "Entry": "🎯 Suggested Entry Zone: Wait for clearer signals.",
                 "Exit": f"✅ Exit Strategy: Target exit around ₹{round(last_price*1.03,2)}" if last_price!="N/A" else "N/A",
@@ -176,6 +178,8 @@ def analyze():
     bb_upper = safe_val(data['BB_upper'])
     bb_lower = safe_val(data['BB_lower'])
     volume_check = data['volume'].iloc[-1] > data['volume'].tail(10).mean()
+    current_price = close_price   # ✅ Current Price = Close Price
+
 
     # Scoring
     score = 0
@@ -246,6 +250,7 @@ def analyze():
     "Company": ticker,
     "Sector": "N/A",
     "Description": f"📌 {ticker} ka sector data unavailable hai.",
+    "CurrentPrice": f"💰 Current Price: ₹{current_price}", 
     "Indicators": details,
     "Score": score,
     "Verdict": verdict_msg,
