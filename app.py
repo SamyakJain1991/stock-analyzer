@@ -51,6 +51,12 @@ STOCK_LIST = get_nse_stock_list()
 def home():
     return render_template('index.html', analysis=None, stock_list=STOCK_LIST)
 
+# ✅ Naya route yahan add karo
+@app.route('/live_price', methods=["GET"])
+def live_price():
+    # code as above
+
+
 @app.route('/analyze', methods=["GET","POST"])
 def analyze():
     raw_input = request.args.get('ticker') or request.form.get('ticker') or request.form.get('search') or "RELIANCE"
