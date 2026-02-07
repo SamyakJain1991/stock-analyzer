@@ -178,6 +178,9 @@ def analyze():
     bb_upper = safe_val(data['BB_upper'])
     bb_lower = safe_val(data['BB_lower'])
     volume_check = data['volume'].iloc[-1] > data['volume'].tail(10).mean()
+    avg_volume = round(data['volume'].tail(20).mean(), 2)   # 20‑day average
+    latest_volume = safe_val(data['volume'])                # latest volume
+    volume_status = "📊 Volume spike detected" if latest_volume > avg_volume else "📉 Volume normal"
     current_price = close_price   # ✅ Current Price = Close Price
 
 
@@ -252,6 +255,7 @@ def analyze():
     "Description": f"📌 {ticker} ka sector data unavailable hai.",
     "CurrentPrice": f"💰 Current Price: ₹{current_price}", 
     "Indicators": details,
+    "Volume": f"Latest: {latest_volume}, Avg(20d): {avg_volume} → {volume_status}",   # ✅ Add here
     "Score": score,
     "Verdict": verdict_msg,
     "Entry": f"🎯 Suggested Entry Zone: {entry_zone}",
