@@ -86,9 +86,9 @@ def analyze():
             last_price = prices.get("lastPrice", "N/A")
             prev_close = prices.get("previousClose", "N/A")
             current_price = last_price
-            latest_volume = prices.get("quantityTraded", "N/A")
-            avg_volume = "N/A"   # NSE API se direct average nahi milta
-            volume_status = f"Latest traded volume: {latest_volume}"
+            latest_volume = prices.get("quantityTraded") or prices.get("totalTradedVolume") or "N/A"
+            volume_status = f"Latest traded volume: {latest_volume}" if latest_volume != "N/A" else "Volume data not available"
+            
             
 
             score = 0
