@@ -203,7 +203,7 @@ def analyze():
     if close_price != "N/A" and bb_upper != "N/A" and bb_lower != "N/A":
         if close_price > bb_upper:
             score -= 1
-            details.append("📉 Price above Bollinger upper band (overbought
+            details.append("📉 Price above Bollinger upper band (overbought)")
 
         elif close_price < bb_lower:
             score += 1
