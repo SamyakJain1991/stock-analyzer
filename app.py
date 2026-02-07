@@ -122,6 +122,14 @@ def analyze():
     if data.empty:
         return render_template('index.html', analysis={'error': f'No data found for {raw_input}'}, stock_list=STOCK_LIST)
     data = data.dropna()
+# Rename columns for finta compatibility
+    data = data.rename(columns={
+        "Open": "open",
+        "High": "high",
+        "Low": "low",
+        "Close": "close",
+        "Volume": "volume"
+    })
 
     def safe_val(series, default="N/A"):
         try:
