@@ -86,10 +86,15 @@ def analyze():
             last_price = prices.get("lastPrice", "N/A")
             prev_close = prices.get("previousClose", "N/A")
             current_price = last_price
-            latest_volume = prices.get("quantityTraded") or prices.get("totalTradedVolume") or "N/A"
-            volume_status = f"Latest traded volume: {latest_volume}" if latest_volume != "N/A" else "Volume data not available"
-            
-            
+# ✅ Fetch volume from Yahoo Finance for consistency
+            yf_data = yf.download(raw_input + ".NS", period="1d", interval="1m")
+            if not yf_data.empty:
+                latest_volume = int(yf_data['Volume'].iloc[-1])
+                avg_volume = int(yf_data['Volume'].tail(20).mean())
+                volume_status = f"Latest: {latest_volume}, Avg(20d): {avg_volume}"
+            else:
+                volume_status = "Volume data not available"
+                 
 
             score = 0
             if last_price != "N/A" and prev_close != "N/A":
