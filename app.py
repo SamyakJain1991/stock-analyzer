@@ -130,7 +130,8 @@ def analyze():
         "Close": "close",
         "Volume": "volume"
     })
-
+    data = data[['open', 'high', 'low', 'close', 'volume']]
+ 
     def safe_val(series, default="N/A"):
         try:
             val = series.iloc[-1]
