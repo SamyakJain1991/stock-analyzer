@@ -86,7 +86,10 @@ def analyze():
             last_price = prices.get("lastPrice", "N/A")
             prev_close = prices.get("previousClose", "N/A")
             current_price = last_price
-
+            latest_volume = prices.get("quantityTraded", "N/A")
+            avg_volume = "N/A"   # NSE API se direct average nahi milta
+            volume_status = f"Latest traded volume: {latest_volume}"
+            
 
             score = 0
             if last_price != "N/A" and prev_close != "N/A":
@@ -118,6 +121,7 @@ def analyze():
                 "Sector": sector,
                 "Description": f"📌 {company_name} ka sector {sector} hai.",
                 "CurrentPrice": f"💰 Current Price: ₹{current_price}",
+                "Volume": volume_status,
                 "Trend": f"{verdict_msg} | Confidence: {confidence}",
                 "Entry": "🎯 Suggested Entry Zone: Wait for clearer signals.",
                 "Exit": f"✅ Exit Strategy: Target exit around ₹{round(last_price*1.03,2)}" if last_price!="N/A" else "N/A",
