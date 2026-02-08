@@ -89,11 +89,7 @@ def analyze():
             day_high = prices.get("intraDayHighLow", {}).get("max", "N/A")
             day_low = prices.get("intraDayHighLow", {}).get("min", "N/A")
             day_range = f"📊 Day Range: ₹{day_low} - ₹{day_high}"
-            week_high = metadata.get("securityInfo", {}).get("weekHighLow", {}).get("max", "N/A")
-            week_low = metadata.get("securityInfo", {}).get("weekHighLow", {}).get("min", "N/A")
-            week_range = f"📈 52W Range: ₹{week_low} - ₹{week_high}"
-            score = 0
-         
+                     
             if last_price != "N/A" and prev_close != "N/A":
                 if last_price > prev_close:
                     score += 1
@@ -124,7 +120,6 @@ def analyze():
                 "Description": f"📌 {company_name} ka sector {sector} hai.",
                 "CurrentPrice": f"💰 Current Price: ₹{current_price}",
                 "DayRange": day_range,
-                "Week52Range": week_range,
                 "Trend": f"{verdict_msg} | Confidence: {confidence}",
                 "Entry": "🎯 Suggested Entry Zone: Wait for clearer signals.",
                 "Exit": f"✅ Exit Strategy: Target exit around ₹{round(last_price*1.03,2)}" if last_price!="N/A" else "N/A",
