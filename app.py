@@ -94,7 +94,7 @@ def analyze():
             month_range = f"🗓️ Month Range: ₹{month_low} - ₹{month_high}"
             week_high = metadata.get("securityInfo", {}).get("weekHighLow", {}).get("max", "N/A")
             week_low = metadata.get("securityInfo", {}).get("weekHighLow", {}).get("min", "N/A")
-           week_range = f"📈 52W Range: ₹{week_low} - ₹{week_high}"
+            week_range = f"📈 52W Range: ₹{week_low} - ₹{week_high}"
             score = 0
          
             if last_price != "N/A" and prev_close != "N/A":
