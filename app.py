@@ -89,6 +89,9 @@ def analyze():
             day_high = prices.get("intraDayHighLow", {}).get("max", "N/A")
             day_low = prices.get("intraDayHighLow", {}).get("min", "N/A")
             day_range = f"📊 Day Range: ₹{day_low} - ₹{day_high}"
+
+            score = 0
+
                      
             if last_price != "N/A" and prev_close != "N/A":
                 if last_price > prev_close:
