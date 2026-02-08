@@ -128,7 +128,7 @@ def analyze():
                 "CurrentPrice": f"💰 Current Price: ₹{current_price}",
                 "DayRange": day_range,
                 "MonthRange": month_range,
-                "52WeekRange": week_range,
+                "Week52Range": week_range,
                 "Trend": f"{verdict_msg} | Confidence: {confidence}",
                 "Entry": "🎯 Suggested Entry Zone: Wait for clearer signals.",
                 "Exit": f"✅ Exit Strategy: Target exit around ₹{round(last_price*1.03,2)}" if last_price!="N/A" else "N/A",
