@@ -86,7 +86,17 @@ def analyze():
             last_price = prices.get("lastPrice", "N/A")
             prev_close = prices.get("previousClose", "N/A")
             current_price = last_price
+            day_high = prices.get("intraDayHighLow", {}).get("max", "N/A")
+            day_low = prices.get("intraDayHighLow", {}).get("min", "N/A")
+            day_range = f"📊 Day Range: ₹{day_low} - ₹{day_high}"
+            month_high = metadata.get("securityInfo", {}).get("monthHighLow", {}).get("max", "N/A")
+            month_low = metadata.get("securityInfo", {}).get("monthHighLow", {}).get("min", "N/A")
+            month_range = f"🗓️ Month Range: ₹{month_low} - ₹{month_high}"
+            week_high = metadata.get("securityInfo", {}).get("weekHighLow", {}).get("max", "N/A")
+            week_low = metadata.get("securityInfo", {}).get("weekHighLow", {}).get("min", "N/A")
+           week_range = f"📈 52W Range: ₹{week_low} - ₹{week_high}"
             score = 0
+         
             if last_price != "N/A" and prev_close != "N/A":
                 if last_price > prev_close:
                     score += 1
@@ -116,6 +126,9 @@ def analyze():
                 "Sector": sector,
                 "Description": f"📌 {company_name} ka sector {sector} hai.",
                 "CurrentPrice": f"💰 Current Price: ₹{current_price}",
+                "DayRange": day_range,
+                "MonthRange": month_range,
+                "52WeekRange": week_range,
                 "Trend": f"{verdict_msg} | Confidence: {confidence}",
                 "Entry": "🎯 Suggested Entry Zone: Wait for clearer signals.",
                 "Exit": f"✅ Exit Strategy: Target exit around ₹{round(last_price*1.03,2)}" if last_price!="N/A" else "N/A",
