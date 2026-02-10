@@ -75,7 +75,7 @@
 <p>Verdict: {{ analysis.Verdict }}</p>
 <p>{{ analysis.Disclaimer }}</p>
 
-<!-- ✅ Chart yahan daalo -->
+<!-- ✅ TradingView Chart Embed -->
 <div class="tradingview-widget-container">
     <div id="tradingview_chart"></div>
     <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
@@ -83,7 +83,7 @@
         new TradingView.widget({
             "width": 980,
             "height": 610,
-            "symbol": "{{ analysis.ticker }}.NS",
+            "symbol": "NSE:{{ analysis.ticker }}",  // ✅ Use this format first
             "interval": "D",
             "timezone": "Asia/Kolkata",
             "theme": "light",
