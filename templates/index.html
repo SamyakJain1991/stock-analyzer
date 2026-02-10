@@ -75,29 +75,14 @@
 <p>Verdict: {{ analysis.Verdict }}</p>
 <p>{{ analysis.Disclaimer }}</p>
 
-<!-- ✅ TradingView Chart Embed -->
-<div class="tradingview-widget-container">
-    <div id="tradingview_chart"></div>
-    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
-    <script type="text/javascript">
-        new TradingView.widget({
-            "width": 980,
-            "height": 610,
-            "symbol": "NSE:{{ analysis.ticker }}",  // ✅ Use this format first
-            "interval": "D",
-            "timezone": "Asia/Kolkata",
-            "theme": "light",
-            "style": "1",
-            "locale": "in",
-            "toolbar_bg": "#f1f3f6",
-            "enable_publishing": false,
-            "hide_top_toolbar": false,
-            "save_image": false,
-            "container_id": "tradingview_chart"
-        });
-    </script>
-</div>
-            {% endif %}
+<!-- ✅ TradingView Link -->
+<p>
+    <a href="https://www.tradingview.com/chart/?symbol=NSE:{{ analysis.ticker }}" 
+       target="_blank" 
+       style="color: blue; text-decoration: underline;">
+       View {{ analysis.ticker }} Chart on TradingView
+    </a>
+</p>            {% endif %}
         </div>
     {% endif %}
 </body>
