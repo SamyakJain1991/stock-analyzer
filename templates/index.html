@@ -74,6 +74,61 @@
   
 <p>Verdict: {{ analysis.Verdict }}</p>
 <p>{{ analysis.Disclaimer }}</p>
+<h2>Stock: {{ analysis.ticker }}</h2>
+
+<!-- Weekly Data Table -->
+<h3>Weekly Data</h3>
+<table border="1" cellpadding="5" cellspacing="0">
+    <tr>
+        <th>Date</th><th>Open</th><th>High</th><th>Low</th><th>Close</th><th>Volume</th>
+    </tr>
+    {% for date, row in analysis.weekly.items() %}
+    <tr>
+        <td>{{ date }}</td>
+        <td>{{ row['Open'] }}</td>
+        <td>{{ row['High'] }}</td>
+        <td>{{ row['Low'] }}</td>
+        <td>{{ row['Close'] }}</td>
+        <td>{{ row['Volume'] }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+<!-- Monthly Data Table -->
+<h3>Monthly Data</h3>
+<table border="1" cellpadding="5" cellspacing="0">
+    <tr>
+        <th>Date</th><th>Open</th><th>High</th><th>Low</th><th>Close</th><th>Volume</th>
+    </tr>
+    {% for date, row in analysis.monthly.items() %}
+    <tr>
+        <td>{{ date }}</td>
+        <td>{{ row['Open'] }}</td>
+        <td>{{ row['High'] }}</td>
+        <td>{{ row['Low'] }}</td>
+        <td>{{ row['Close'] }}</td>
+        <td>{{ row['Volume'] }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+<!-- Yearly Data Table -->
+<h3>Yearly Data</h3>
+<table border="1" cellpadding="5" cellspacing="0">
+    <tr>
+        <th>Date</th><th>Open</th><th>High</th><th>Low</th><th>Close</th><th>Volume</th>
+    </tr>
+    {% for date, row in analysis.yearly.items() %}
+    <tr>
+        <td>{{ date }}</td>
+        <td>{{ row['Open'] }}</td>
+        <td>{{ row['High'] }}</td>
+        <td>{{ row['Low'] }}</td>
+        <td>{{ row['Close'] }}</td>
+        <td>{{ row['Volume'] }}</td>
+    </tr>
+    {% endfor %}
+</table>
 
 <!-- ✅ TradingView Link -->
 <p>

@@ -8,6 +8,47 @@ import os
 
 app = Flask(__name__)
 
+@app.route('/stock/<ticker>')
+def stock_analysis(ticker):
+# Fetch 2 years of daily data
+    data = yf.download(f"{ticker}.NS", period="2y", interval="1d")
+
+# Weekly candles
+    weekly = data.resample('W').agg({
+        'Open': 'first',
+        'High': 'max',
+        'Low': 'min',
+        'Close': 'last',
+        'Volume': 'sum'
+    })
+
+# Monthly candles
+    monthly = data.resample('M').agg({
+        'Open': 'first',
+        'High': 'max',
+        'Low': 'min',
+        'Close': 'last',
+        'Volume': 'sum'
+    })
+
+# Yearly candles
+    yearly = data.resample('Y').agg({
+        'Open': 'first',
+        'High': 'max',
+        'Low': 'min',
+        'Close': 'last',
+        'Volume': 'sum'
+    })
+
+# Convert to dictionary for frontend
+    analysis = {
+        "ticker": ticker,
+        "weekly": weekly.tail(5).to_dict(),
+        "monthly": monthly.tail(5).to_dict(),
+        "yearly": yearly.tail(5).to_dict()
+    }
+
+    return render_template("index.html", analysis=analysis) 
 # --- Helper: sanitize ticker ---
 def sanitize_ticker(raw_input):
     if raw_input is None:
