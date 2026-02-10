@@ -71,7 +71,11 @@
                 <p>{{ analysis.Exit }}</p>
                 <p>{{ analysis.StopLoss }}</p>
                 <p><strong>Verdict:</strong> {{ analysis.Verdict }}</p>
-   <!-- ✅ TradingView Chart Embed -->
+  
+<p>Verdict: {{ analysis.Verdict }}</p>
+<p>{{ analysis.Disclaimer }}</p>
+
+<!-- ✅ Chart yahan daalo -->
 <div class="tradingview-widget-container">
     <div id="tradingview_chart"></div>
     <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
@@ -79,7 +83,7 @@
         new TradingView.widget({
             "width": 980,
             "height": 610,
-            "symbol": "NSE:{{ analysis.ticker }}",  // ✅ Dynamic ticker from backend
+            "symbol": "{{ analysis.ticker }}.NS",
             "interval": "D",
             "timezone": "Asia/Kolkata",
             "theme": "light",
