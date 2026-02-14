@@ -200,12 +200,13 @@ def analyze():
     })
     data = data[['open','high','low','close','volume']]
 
-    def safe_val(series, default="N/A"):
+    def safe_val(series, default=None):
+        """Returns numeric value or None (not "N/A" string)"""
         try:
             val = series.iloc[-1]
-            if np.isnan(val):
+            if pd.isna(val):
                 return default
-            return round(val, 2)
+            return round(float(val), 2)
         except Exception:
             return default
 
@@ -261,7 +262,7 @@ def analyze():
         data['BB_upper'] = np.nan
         data['BB_lower'] = np.nan
 
-    # Values
+    # ✅ FIXED: Get numeric values (None if unavailable, not "N/A" strings)
     sma10 = safe_val(data['SMA_10'])
     sma30 = safe_val(data['SMA_30'])
     ema20 = safe_val(data['EMA_20'])
@@ -270,32 +271,44 @@ def analyze():
     close_price = safe_val(data['close'])
     bb_upper = safe_val(data['BB_upper'])
     bb_lower = safe_val(data['BB_lower'])
-    volume_check = data['volume'].iloc[-1] > data['volume'].tail(10).mean()
-    avg_volume = round(data['volume'].tail(20).mean(), 2)   # 20‑day average
-    latest_volume = safe_val(data['volume'])                # latest volume
-    volume_status = "📊 Volume spike detected" if latest_volume > avg_volume else "📉 Volume normal"
-    current_price = close_price   # ✅ Current Price = Close Price
-
+    
+    # ✅ FIXED: Volume handling
+    try:
+        volume_check = data['volume'].iloc[-1] > data['volume'].tail(10).mean()
+        avg_volume = round(data['volume'].tail(20).mean(), 2)
+        latest_volume = safe_val(data['volume'])
+        if latest_volume is not None and avg_volume is not None:
+            volume_status = "📊 Volume spike detected" if latest_volume > avg_volume else "📉 Volume normal"
+        else:
+            volume_status = "📉 Volume data unavailable"
+    except Exception as e:
+        print(f"Volume error: {e}")
+        volume_check = False
+        avg_volume = None
+        latest_volume = None
+        volume_status = "📉 Volume data unavailable"
+    
+    current_price = close_price if close_price is not None else 0
 
     # Scoring
     score = 0
     details = []
 
-    if sma10 != "N/A" and sma30 != "N/A" and sma10 > sma30:
+    if sma10 is not None and sma30 is not None and sma10 > sma30:
         score += 1
         details.append("📈 SMA crossover bullish (+1)")
     else:
         score -= 1
         details.append("📉 SMA crossover bearish (-1)")
 
-    if ema20 != "N/A" and close_price != "N/A" and close_price > ema20:
+    if ema20 is not None and close_price is not None and close_price > ema20:
         score += 1
         details.append("📈 Price above EMA20 (+1)")
     else:
         score -= 1
         details.append("📉 Price below EMA20 (-1)")
 
-    if rsi_val != "N/A":
+    if rsi_val is not None:
         if rsi_val > 55:
             score += 1
             details.append(f"💪 RSI {rsi_val} bullish (+1)")
@@ -303,14 +316,14 @@ def analyze():
             score -= 1
             details.append(f"😓 RSI {rsi_val} bearish (-1)")
 
-    if macd_val != "N/A" and macd_val > 0:
+    if macd_val is not None and macd_val > 0:
         score += 1
         details.append("📈 MACD bullish (+1)")
-    elif macd_val != "N/A":
+    elif macd_val is not None:
         score -= 1
         details.append("📉 MACD bearish (-1)")
 
-    if close_price != "N/A" and bb_upper != "N/A" and bb_lower != "N/A":
+    if close_price is not None and bb_upper is not None and bb_lower is not None:
         if close_price > bb_upper:
             score -= 1
             details.append("📉 Price above Bollinger upper band (overbought)")
@@ -323,15 +336,14 @@ def analyze():
         details.append("📊 Volume spike (+1)")
 
     # Final verdict
-       
     if score >= 3:
         verdict_msg = f"🟢 Strong Buy — All indicators aligned bullish. High-confidence buying opportunity! (Score {score})"
-        entry_zone = f"₹{round(close_price*0.97,2)} – ₹{round(close_price*0.99,2)}"
-        stop_loss = f"₹{round(close_price*0.95,2)}"
+        entry_zone = f"₹{round(close_price*0.97,2)} – ₹{round(close_price*0.99,2)}" if close_price else "N/A"
+        stop_loss = f"₹{round(close_price*0.95,2)}" if close_price else "N/A"
     elif score <= -3:
         verdict_msg = f"🔴 Strong Sell — Indicators show bearish momentum. Avoid buying, shorting may be considered. (Score {score})"
-        entry_zone = f"Sell near ₹{close_price}, target lower levels."
-        stop_loss = f"₹{round(close_price*1.02,2)}"
+        entry_zone = f"Sell near ₹{close_price}, target lower levels." if close_price else "N/A"
+        stop_loss = f"₹{round(close_price*1.02,2)}" if close_price else "N/A"
     elif -2 <= score <= 2:
         verdict_msg = f"⚖️ Neutral — Signals are mixed. Best to wait for confirmation. (Score {score})"
         entry_zone = "Wait for clearer signals before entry."
@@ -341,31 +353,34 @@ def analyze():
         entry_zone = "No clear entry zone."
         stop_loss = "N/A"
 
-    stop_loss_value = round(close_price * 0.98, 2) if close_price != "N/A" else "N/A"
-    target_value = round(close_price * 1.03, 2) if close_price != "N/A" else "N/A"
+    stop_loss_value = round(close_price * 0.98, 2) if close_price else "N/A"
+    target_value = round(close_price * 1.03, 2) if close_price else "N/A"
     trade_plan = build_trade_plan(
         verdict_msg,
         score,
-        close_price,
+        close_price if close_price else "N/A",
         stop_loss_value,
         target_value,
     )
 
+    # ✅ FIXED: Proper volume display
+    volume_display = f"Latest: {latest_volume}, Avg(20d): {avg_volume} → {volume_status}" if latest_volume is not None else "Volume data unavailable"
+
     analysis = {
-    "ticker": raw_input,
-    "Company": ticker,
-    "Sector": "N/A",
-    "Description": f"📌 {ticker} ka sector data unavailable hai.",
-    "CurrentPrice": f"💰 Current Price: ₹{current_price}", 
-    "Indicators": details,
-    "Volume": f"Latest: {latest_volume}, Avg(20d): {avg_volume} → {volume_status}",   # ✅ Add here
-    "Score": score,
-    "Verdict": verdict_msg,
-    "Entry": f"🎯 Suggested Entry Zone: {entry_zone}",
-    "Exit": f"✅ Target Exit: ₹{target_value}"  if close_price!="N/A" else "N/A",
-    "StopLoss": f"🛑 Stop-loss: ₹{stop_loss_value}" if close_price!="N/A" else "N/A",
-    "TradePlan": trade_plan,
-    "Disclaimer": "This analysis is for educational purposes only. Not financial advice."
+        "ticker": raw_input,
+        "Company": ticker,
+        "Sector": "N/A",
+        "Description": f"📌 {ticker} ka sector data unavailable hai.",
+        "CurrentPrice": f"💰 Current Price: ₹{current_price}" if current_price else "N/A",
+        "Indicators": details,
+        "Volume": volume_display,
+        "Score": score,
+        "Verdict": verdict_msg,
+        "Entry": f"🎯 Suggested Entry Zone: {entry_zone}",
+        "Exit": f"✅ Target Exit: ₹{target_value}" if close_price else "N/A",
+        "StopLoss": f"🛑 Stop-loss: ₹{stop_loss_value}" if close_price else "N/A",
+        "TradePlan": trade_plan,
+        "Disclaimer": "This analysis is for educational purposes only. Not financial advice."
     }
 
     return render_template('index.html', analysis=analysis, stock_list=STOCK_LIST)
