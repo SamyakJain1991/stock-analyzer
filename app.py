@@ -272,9 +272,12 @@ def analyze():
     bb_upper = safe_val(data['BB_upper'])
     bb_lower = safe_val(data['BB_lower'])
     
-    # ✅ FIXED: Volume handling
+    # ✅ FIXED: Volume handling - use .iloc[-1] to get scalar boolean
     try:
-        volume_check = data['volume'].iloc[-1] > data['volume'].tail(10).mean()
+        latest_volume_val = data['volume'].iloc[-1]
+        avg_10_volume = data['volume'].tail(10).mean()
+        volume_check = bool(latest_volume_val > avg_10_volume)  # ✅ Convert to boolean
+        
         avg_volume = round(data['volume'].tail(20).mean(), 2)
         latest_volume = safe_val(data['volume'])
         if latest_volume is not None and avg_volume is not None:
@@ -331,7 +334,7 @@ def analyze():
             score += 1
             details.append("📈 Price below Bollinger lower band (oversold)")
 
-    if volume_check:
+    if volume_check:  # ✅ Now this is a safe boolean
         score += 1
         details.append("📊 Volume spike (+1)")
 
