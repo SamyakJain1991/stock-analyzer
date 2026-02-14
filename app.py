@@ -6,8 +6,26 @@ import pandas as pd
 from finta import TA
 import os
 import time
+from functools import lru_cache
 
 app = Flask(__name__)
+
+# ✅ NEW: Cache to store recently fetched data (avoids duplicate API calls)
+data_cache = {}
+CACHE_DURATION = 300  # Cache for 5 minutes
+
+def get_cached_data(ticker):
+    """Get data from cache if available and not expired"""
+    if ticker in data_cache:
+        cached_time, cached_data = data_cache[ticker]
+        if time.time() - cached_time < CACHE_DURATION:
+            print(f"✅ Using cached data for {ticker}")
+            return cached_data
+    return None
+
+def set_cached_data(ticker, data):
+    """Store data in cache"""
+    data_cache[ticker] = (time.time(), data)
 
 
 def build_trade_plan(verdict_msg, score, current_price, stop_loss, target_price):
@@ -106,9 +124,18 @@ def live_price():
         "current_price": f"₹{current_price}"
     }
 
-# ✅ NEW: Retry function to handle rate limits
-def fetch_data_with_retry(ticker, max_retries=3):
-    """Fetch data with retry mechanism and delays"""
+# ✅ IMPROVED: Retry function with better delays for rate limiting
+def fetch_data_with_retry(ticker, max_retries=4, initial_wait=3):
+    """
+    Fetch data with retry mechanism and delays
+    initial_wait: Start with longer delay to avoid rate limiting on first request
+    """
+    
+    # ✅ Check cache first
+    cached = get_cached_data(ticker)
+    if cached is not None and not cached.empty:
+        return cached
+    
     for attempt in range(max_retries):
         try:
             print(f"Attempt {attempt + 1}: Downloading {ticker}...")
@@ -116,16 +143,18 @@ def fetch_data_with_retry(ticker, max_retries=3):
             
             if not data.empty:
                 print(f"✅ Successfully downloaded {ticker}")
+                set_cached_data(ticker, data)  # ✅ Cache the data
                 return data
             else:
                 print(f"⚠️ {ticker} returned empty data")
         except Exception as e:
             print(f"❌ Error downloading {ticker}: {e}")
         
-        # Wait before retry (avoid rate limiting)
+        # Wait before retry with longer delays for rate limiting
         if attempt < max_retries - 1:
-            wait_time = 2 ** attempt  # Exponential backoff: 1, 2, 4 seconds
-            print(f"Waiting {wait_time} seconds before retry...")
+            # First attempt: wait 3 seconds, then exponential backoff
+            wait_time = initial_wait + (2 ** attempt)  # 3, 5, 9, 17 seconds
+            print(f"⏳ Rate limit protection: Waiting {wait_time} seconds before retry...")
             time.sleep(wait_time)
     
     return pd.DataFrame()  # Return empty DataFrame if all retries fail
@@ -205,19 +234,23 @@ def analyze():
             return render_template('index.html', analysis=analysis, stock_list=STOCK_LIST)
 
     # --- Yahoo fallback with retry mechanism ---
-    # ✅ FIXED: Try without .NS first (since it was working before)
-    data = fetch_data_with_retry(raw_input)
+    # ✅ IMPROVED: Longer initial delay (3 seconds) to avoid first-request rate limiting
+    print(f"\n🔍 Analyzing {raw_input}...")
+    print("⏳ Starting Yahoo Finance download (with rate limit protection)...\n")
+    
+    # Try without suffix first
+    data = fetch_data_with_retry(raw_input, initial_wait=3)
     
     if data.empty:
         # Try with .NS suffix
-        data = fetch_data_with_retry(raw_input + ".NS")
+        data = fetch_data_with_retry(raw_input + ".NS", initial_wait=3)
     
     if data.empty:
         # Try with .BO suffix (BSE)
-        data = fetch_data_with_retry(raw_input + ".BO")
+        data = fetch_data_with_retry(raw_input + ".BO", initial_wait=3)
     
     if data.empty:
-        return render_template('index.html', analysis={'error': f'Sorry, no reliable data found for {raw_input}. Please check the ticker symbol or try another stock. The service may also be rate-limited by Yahoo Finance.'}, stock_list=STOCK_LIST)
+        return render_template('index.html', analysis={'error': f'Sorry, no data found for {raw_input}. Please check the ticker symbol. The service may be rate-limited—try again after a minute.'}, stock_list=STOCK_LIST)
 
     data = data.dropna()
     data = data.rename(columns={
