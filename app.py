@@ -8,6 +8,41 @@ import os
 
 app = Flask(__name__)
 
+
+def build_trade_plan(verdict_msg, score, current_price, stop_loss, target_price):
+    risk_note = "Capital at risk per trade should generally stay below 1-2%."
+    if "Strong Buy" in verdict_msg:
+        action = "Bias: Long"
+        checklist = [
+            "Wait for confirmation candle near support / entry zone.",
+            "Enter in parts instead of full quantity at once.",
+            "Trail stop-loss after target-1 is reached."
+        ]
+    elif "Strong Sell" in verdict_msg:
+        action = "Bias: Defensive / Short setups only"
+        checklist = [
+            "Avoid fresh long positions until trend improves.",
+            "For short setups, wait for pullback rejection.",
+            "Keep strict stop-loss due to sharp reversals."
+        ]
+    else:
+        action = "Bias: Wait & Watch"
+        checklist = [
+            "No aggressive entry until multiple signals align.",
+            "Track breakout above resistance or breakdown below support.",
+            "Preserve capital during low-conviction setups."
+        ]
+
+    return {
+        "Action": action,
+        "ScoreLabel": f"Composite Technical Score: {score}",
+        "CurrentPriceValue": current_price,
+        "StopLossValue": stop_loss,
+        "TargetValue": target_price,
+        "RiskNote": risk_note,
+        "Checklist": checklist,
+    }
+
 # --- Helper: sanitize ticker ---
 def sanitize_ticker(raw_input):
     if raw_input is None:
@@ -116,6 +151,16 @@ def analyze():
                 verdict_msg = f"⚖️ Neutral — No clear momentum. (Score {score})"
                 confidence = "Low"
 
+            stop_loss_value = round(last_price * 0.98, 2) if last_price != "N/A" else "N/A"
+            target_value = round(last_price * 1.03, 2) if last_price != "N/A" else "N/A"
+            trade_plan = build_trade_plan(
+                verdict_msg,
+                score,
+                last_price,
+                stop_loss_value,
+                target_value,
+            )
+
             analysis = {
                 "ticker": raw_input,
                 "Company": company_name,
@@ -125,10 +170,12 @@ def analyze():
                 "DayRange": day_range,
                 "Trend": f"{verdict_msg} | Confidence: {confidence}",
                 "Entry": "🎯 Suggested Entry Zone: Wait for clearer signals.",
-                "Exit": f"✅ Exit Strategy: Target exit around ₹{round(last_price*1.03,2)}" if last_price!="N/A" else "N/A",
-                "StopLoss": "🛑 Stop-loss: N/A",
+                "Exit": f"✅ Exit Strategy: Target exit around ₹{target_value}" if last_price!="N/A" else "N/A",
+                "StopLoss": f"🛑 Stop-loss: ₹{stop_loss_value}" if last_price!="N/A" else "N/A",
                 "Verdict": verdict_msg,
-                "Disclaimer": "This analysis is for educational purposes only. Not financial advice."
+                "Disclaimer": "This analysis is for educational purposes only. Not financial advice.",
+                "Score": score,
+                "TradePlan": trade_plan,
             }
             return render_template('index.html', analysis=analysis, stock_list=STOCK_LIST)
 
@@ -253,6 +300,16 @@ def analyze():
         entry_zone = "No clear entry zone."
         stop_loss = "N/A"
 
+    stop_loss_value = round(close_price * 0.98, 2) if close_price != "N/A" else "N/A"
+    target_value = round(close_price * 1.03, 2) if close_price != "N/A" else "N/A"
+    trade_plan = build_trade_plan(
+        verdict_msg,
+        score,
+        close_price,
+        stop_loss_value,
+        target_value,
+    )
+
     analysis = {
     "ticker": raw_input,
     "Company": ticker,
@@ -264,8 +321,10 @@ def analyze():
     "Score": score,
     "Verdict": verdict_msg,
     "Entry": f"🎯 Suggested Entry Zone: {entry_zone}",
-    "Exit": f"✅ Target Exit: ₹{round(close_price*1.03,2)}"  if close_price!="N/A" else "N/A",
-    "StopLoss": f"🛑 Stop-loss: ₹{round(close_price*0.98,2)}" if close_price!="N/A" else "N/A"
+    "Exit": f"✅ Target Exit: ₹{target_value}"  if close_price!="N/A" else "N/A",
+    "StopLoss": f"🛑 Stop-loss: ₹{stop_loss_value}" if close_price!="N/A" else "N/A",
+    "TradePlan": trade_plan,
+    "Disclaimer": "This analysis is for educational purposes only. Not financial advice."
     }
 
     return render_template('index.html', analysis=analysis)

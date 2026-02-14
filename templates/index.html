@@ -4,85 +4,244 @@
     <meta charset="UTF-8">
     <title>Stock Analyzer</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; background: #f9f9f9; }
-        h1 { color: #333; }
-        .card { background: #fff; padding: 20px; margin-top: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .alert { background:#fff3cd; border:1px solid #ffeeba; color:#856404; padding:15px; border-radius:8px; margin-bottom:20px; }
-        .error { color: red; font-weight: bold; }
-        select, input[type="text"], button {
-            padding: 8px; margin: 5px; border-radius: 4px; border: 1px solid #ccc;
+        :root {
+            --bg: #f4f6fb;
+            --text: #1f2937;
+            --muted: #6b7280;
+            --card: #ffffff;
+            --primary: #2563eb;
+            --buy: #15803d;
+            --sell: #b91c1c;
+            --neutral: #92400e;
+            --border: #e5e7eb;
         }
-        button { background: #007bff; color: #fff; border: none; cursor: pointer; }
-        button:hover { background: #0056b3; }
+
+        * { box-sizing: border-box; }
+        body {
+            font-family: Inter, Arial, sans-serif;
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        h1 { margin-bottom: 8px; }
+        .subtitle { color: var(--muted); margin-top: 0; }
+
+        .card {
+            background: var(--card);
+            padding: 20px;
+            margin-top: 16px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.04);
+        }
+
+        .alert {
+            background:#fff7ed;
+            border:1px solid #fed7aa;
+            color:#9a3412;
+            padding:15px;
+            border-radius:10px;
+            margin-bottom:20px;
+        }
+
+        .error { color: #b91c1c; font-weight: bold; }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(120px, 1fr));
+            gap: 10px;
+            align-items: end;
+        }
+
+        label { font-weight: 600; font-size: 14px; }
+
+        select, input[type="text"], button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 4px;
+            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+            font-size: 14px;
+        }
+
+        button {
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        button:hover { background: #1d4ed8; }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        .metric {
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: #fafafa;
+        }
+
+        .metric h4 { margin: 0 0 6px; font-size: 13px; color: var(--muted); }
+        .metric p { margin: 0; font-weight: 600; }
+
+        .verdict-badge {
+            display: inline-block;
+            font-size: 13px;
+            font-weight: 700;
+            padding: 8px 12px;
+            border-radius: 999px;
+            margin-top: 8px;
+            color: #fff;
+        }
+
+        .buy { background: var(--buy); }
+        .sell { background: var(--sell); }
+        .neutral { background: var(--neutral); }
+
+        ul { padding-left: 20px; }
+
+        .action-links a {
+            color: var(--primary);
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .action-links a:hover { text-decoration: underline; }
+
+        @media (max-width: 760px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
     <script>
         function clearDropdownOnSearch() {
             document.getElementById("tickerDropdown").value = "";
         }
+
+        function verdictClass(verdict) {
+            if (!verdict) return "neutral";
+            if (verdict.includes("Strong Buy") || verdict.includes("Cautious Buy")) return "buy";
+            if (verdict.includes("Strong Sell") || verdict.includes("Cautious Sell")) return "sell";
+            return "neutral";
+        }
     </script>
 </head>
 <body>
-    <h1>📊 Stock Analyzer</h1>
+    <div class="container">
+        <h1>📊 Stock Analyzer Pro</h1>
+        <p class="subtitle">Technical-first dashboard for decision-ready trade planning.</p>
 
-    <!-- Professional Disclaimer -->
-    <div class="alert">
-        ⚠️ <strong>Disclaimer:</strong> The information and analysis provided on this platform are for educational and informational purposes only. 
-        They do not constitute investment advice, financial guidance, or recommendations to buy or sell securities. 
-        Users should conduct their own research or consult a qualified financial advisor before making any investment decisions.
-    </div>
-
-    <form method="POST" action="/analyze" onsubmit="clearDropdownOnSearch()">
-        <!-- Dropdown -->
-        <label for="tickerDropdown">Select Stock:</label>
-        <select id="tickerDropdown" name="ticker">
-            <option value="">--Select Stock--</option>
-            {% for stock in stock_list %}
-                <option value="{{ stock }}">{{ stock }}</option>
-            {% endfor %}
-        </select>
-
-        <!-- Search box with autocomplete -->
-        <label for="searchBox">Or Search:</label>
-        <input type="text" id="searchBox" name="search" placeholder="Enter stock symbol..." list="stockSuggestions">
-
-        <!-- Datalist for autocomplete -->
-        <datalist id="stockSuggestions">
-            {% for stock in stock_list %}
-                <option value="{{ stock }}">
-            {% endfor %}
-        </datalist>
-
-        <button type="submit">Analyze</button>
-    </form>
-
-    {% if analysis %}
-        <div class="card">
-            {% if analysis.error %}
-                <p class="error">{{ analysis.error }}</p>
-            {% else %}
-                <h2>Analysis for {{ analysis.ticker }}</h2>
-                <p><strong>Company:</strong> {{ analysis.Company }}</p>
-                <p><strong>Sector:</strong> {{ analysis.Sector }}</p>
-                <p>{{ analysis.Description }}</p>
-                <p>{{ analysis.CurrentPrice }}</p>
-                <p>{{ analysis.DayRange }}</p>
-                <p>{{ analysis.Trend }}</p>
-                <p>{{ analysis.Entry }}</p>
-                <p>{{ analysis.Exit }}</p>
-                <p>{{ analysis.StopLoss }}</p>
-                <p><strong>Verdict:</strong> {{ analysis.Verdict }}</p>
-  
-<p>Verdict: {{ analysis.Verdict }}</p>
-<p>{{ analysis.Disclaimer }}</p>
-<!-- ✅ TradingView Link -->
-<p>
-    <a href="https://www.tradingview.com/chart/?symbol=NSE:{{ analysis.ticker }}" 
-       target="_blank" 
-       style="color: blue; text-decoration: underline;">
-       View {{ analysis.ticker }} Chart on TradingView
-    </a>
-</p>            {% endif %}
+        <div class="alert">
+            ⚠️ <strong>Disclaimer:</strong> The information and analysis provided are for educational purposes only.
+            This is not financial advice. Always validate with your own research and risk plan.
         </div>
-    {% endif %}
+
+        <form method="POST" action="/analyze" onsubmit="clearDropdownOnSearch()" class="card">
+            <div class="form-grid">
+                <div>
+                    <label for="tickerDropdown">Select Stock</label>
+                    <select id="tickerDropdown" name="ticker">
+                        <option value="">--Select Stock--</option>
+                        {% for stock in stock_list %}
+                            <option value="{{ stock }}">{{ stock }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label for="searchBox">Or Search Symbol</label>
+                    <input type="text" id="searchBox" name="search" placeholder="RELIANCE" list="stockSuggestions">
+                </div>
+
+                <datalist id="stockSuggestions">
+                    {% for stock in stock_list %}
+                        <option value="{{ stock }}">
+                    {% endfor %}
+                </datalist>
+
+                <div>
+                    <button type="submit">Run Technical Analysis</button>
+                </div>
+            </div>
+        </form>
+
+        {% if analysis %}
+            <div class="card">
+                {% if analysis.error %}
+                    <p class="error">{{ analysis.error }}</p>
+                {% else %}
+                    <h2>Analysis for {{ analysis.ticker }}</h2>
+                    {% set verdict_cls = 'neutral' %}
+                    {% if 'Strong Buy' in analysis.Verdict or 'Cautious Buy' in analysis.Verdict %}
+                        {% set verdict_cls = 'buy' %}
+                    {% elif 'Strong Sell' in analysis.Verdict or 'Cautious Sell' in analysis.Verdict %}
+                        {% set verdict_cls = 'sell' %}
+                    {% endif %}
+
+                    <span class="verdict-badge {{ verdict_cls }}">{{ analysis.Verdict }}</span>
+
+                    <div class="metrics">
+                        <div class="metric"><h4>Company</h4><p>{{ analysis.Company }}</p></div>
+                        <div class="metric"><h4>Sector</h4><p>{{ analysis.Sector }}</p></div>
+                        <div class="metric"><h4>Current Price</h4><p>{{ analysis.CurrentPrice }}</p></div>
+                        {% if analysis.Score is defined %}
+                            <div class="metric"><h4>Technical Score</h4><p>{{ analysis.Score }}</p></div>
+                        {% endif %}
+                    </div>
+
+                    <p>{{ analysis.Description }}</p>
+                    {% if analysis.DayRange %}<p>{{ analysis.DayRange }}</p>{% endif %}
+                    {% if analysis.Trend %}<p>{{ analysis.Trend }}</p>{% endif %}
+                    {% if analysis.Volume %}<p><strong>Volume:</strong> {{ analysis.Volume }}</p>{% endif %}
+                    <p>{{ analysis.Entry }}</p>
+                    <p>{{ analysis.Exit }}</p>
+                    <p>{{ analysis.StopLoss }}</p>
+
+                    {% if analysis.Indicators %}
+                        <h3>Indicator Breakdown</h3>
+                        <ul>
+                            {% for line in analysis.Indicators %}
+                                <li>{{ line }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+
+                    {% if analysis.TradePlan %}
+                        <h3>Actionable Trade Plan</h3>
+                        <p><strong>{{ analysis.TradePlan.Action }}</strong></p>
+                        <p>{{ analysis.TradePlan.ScoreLabel }}</p>
+                        <p><strong>Risk Rule:</strong> {{ analysis.TradePlan.RiskNote }}</p>
+                        <ul>
+                            {% for item in analysis.TradePlan.Checklist %}
+                                <li>{{ item }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+
+                    <p>{{ analysis.Disclaimer }}</p>
+                    <p class="action-links">
+                        <a href="https://www.tradingview.com/chart/?symbol=NSE:{{ analysis.ticker }}" target="_blank">
+                            View {{ analysis.ticker }} live chart on TradingView →
+                        </a>
+                    </p>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
 </body>
 </html>
