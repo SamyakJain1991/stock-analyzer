@@ -209,16 +209,57 @@ def analyze():
         except Exception:
             return default
 
-    # Indicators
-    data['SMA_10'] = TA.SMA(data, 10)
-    data['SMA_30'] = TA.SMA(data, 30)
-    data['EMA_20'] = TA.EMA(data, 20)
-    data['RSI'] = TA.RSI(data)
-    macd_line = TA.MACD(data)['MACD']
-    data['MACD'] = macd_line
-    bb = TA.BBANDS(data)
-    data['BB_upper'] = bb['BB_UPPER']
-    data['BB_lower'] = bb['BB_LOWER']
+    # ✅ FIXED: Properly extract indicator values from finta
+    try:
+        sma10_result = TA.SMA(data, 10)
+        data['SMA_10'] = sma10_result if isinstance(sma10_result, pd.Series) else sma10_result.iloc[:, 0]
+    except Exception as e:
+        print(f"SMA_10 error: {e}")
+        data['SMA_10'] = np.nan
+
+    try:
+        sma30_result = TA.SMA(data, 30)
+        data['SMA_30'] = sma30_result if isinstance(sma30_result, pd.Series) else sma30_result.iloc[:, 0]
+    except Exception as e:
+        print(f"SMA_30 error: {e}")
+        data['SMA_30'] = np.nan
+
+    try:
+        ema20_result = TA.EMA(data, 20)
+        data['EMA_20'] = ema20_result if isinstance(ema20_result, pd.Series) else ema20_result.iloc[:, 0]
+    except Exception as e:
+        print(f"EMA_20 error: {e}")
+        data['EMA_20'] = np.nan
+
+    try:
+        rsi_result = TA.RSI(data)
+        data['RSI'] = rsi_result if isinstance(rsi_result, pd.Series) else rsi_result.iloc[:, 0]
+    except Exception as e:
+        print(f"RSI error: {e}")
+        data['RSI'] = np.nan
+
+    try:
+        macd_result = TA.MACD(data)
+        if isinstance(macd_result, pd.DataFrame):
+            data['MACD'] = macd_result['MACD']
+        else:
+            data['MACD'] = macd_result
+    except Exception as e:
+        print(f"MACD error: {e}")
+        data['MACD'] = np.nan
+
+    try:
+        bb_result = TA.BBANDS(data)
+        if isinstance(bb_result, pd.DataFrame):
+            data['BB_upper'] = bb_result['BB_UPPER']
+            data['BB_lower'] = bb_result['BB_LOWER']
+        else:
+            data['BB_upper'] = np.nan
+            data['BB_lower'] = np.nan
+    except Exception as e:
+        print(f"BBANDS error: {e}")
+        data['BB_upper'] = np.nan
+        data['BB_lower'] = np.nan
 
     # Values
     sma10 = safe_val(data['SMA_10'])
@@ -327,9 +368,9 @@ def analyze():
     "Disclaimer": "This analysis is for educational purposes only. Not financial advice."
     }
 
-    return render_template('index.html', analysis=analysis)
+    return render_template('index.html', analysis=analysis, stock_list=STOCK_LIST)
 
 # ✅ Render ke liye mandatory block
 if __name__ == "__main__":
-    port = int(os.  environ.get("PORT", 5000))
+    port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
