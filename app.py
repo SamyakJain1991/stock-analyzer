@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 from finta import TA
 import os
+import time
 
 app = Flask(__name__)
 
@@ -105,6 +106,30 @@ def live_price():
         "current_price": f"₹{current_price}"
     }
 
+# ✅ NEW: Retry function to handle rate limits
+def fetch_data_with_retry(ticker, max_retries=3):
+    """Fetch data with retry mechanism and delays"""
+    for attempt in range(max_retries):
+        try:
+            print(f"Attempt {attempt + 1}: Downloading {ticker}...")
+            data = yf.download(ticker, period='6mo', interval='1d', progress=False)
+            
+            if not data.empty:
+                print(f"✅ Successfully downloaded {ticker}")
+                return data
+            else:
+                print(f"⚠️ {ticker} returned empty data")
+        except Exception as e:
+            print(f"❌ Error downloading {ticker}: {e}")
+        
+        # Wait before retry (avoid rate limiting)
+        if attempt < max_retries - 1:
+            wait_time = 2 ** attempt  # Exponential backoff: 1, 2, 4 seconds
+            print(f"Waiting {wait_time} seconds before retry...")
+            time.sleep(wait_time)
+    
+    return pd.DataFrame()  # Return empty DataFrame if all retries fail
+
 @app.route('/analyze', methods=["GET","POST"])
 def analyze():
     raw_input = request.args.get('ticker') or request.form.get('ticker') or request.form.get('search') or "RELIANCE"
@@ -179,16 +204,20 @@ def analyze():
             }
             return render_template('index.html', analysis=analysis, stock_list=STOCK_LIST)
 
-    # --- Yahoo fallback ---
-    ticker = raw_input + ".NS"
-    data = yf.download(ticker, period='6mo', interval='1d')
+    # --- Yahoo fallback with retry mechanism ---
+    # ✅ FIXED: Try without .NS first (since it was working before)
+    data = fetch_data_with_retry(raw_input)
+    
     if data.empty:
-        ticker = raw_input + ".BO"
-        data = yf.download(ticker, period='6mo', interval='1d')
+        # Try with .NS suffix
+        data = fetch_data_with_retry(raw_input + ".NS")
+    
     if data.empty:
-        data = yf.download(raw_input, period='6mo', interval='1d')
+        # Try with .BO suffix (BSE)
+        data = fetch_data_with_retry(raw_input + ".BO")
+    
     if data.empty:
-        return render_template('index.html', analysis={'error': f'Sorry, no reliable data found for {raw_input}. Please check the ticker symbol or try another stock.'}, stock_list=STOCK_LIST)
+        return render_template('index.html', analysis={'error': f'Sorry, no reliable data found for {raw_input}. Please check the ticker symbol or try another stock. The service may also be rate-limited by Yahoo Finance.'}, stock_list=STOCK_LIST)
 
     data = data.dropna()
     data = data.rename(columns={
@@ -371,9 +400,9 @@ def analyze():
 
     analysis = {
         "ticker": raw_input,
-        "Company": ticker,
+        "Company": raw_input,
         "Sector": "N/A",
-        "Description": f"📌 {ticker} ka sector data unavailable hai.",
+        "Description": f"📌 {raw_input} Technical Analysis",
         "CurrentPrice": f"💰 Current Price: ₹{current_price}" if current_price else "N/A",
         "Indicators": details,
         "Volume": volume_display,
